@@ -15,3 +15,5 @@ Imports:
     clubSandwich,
     igraph,
     FindIt
+URL: http://github.com/naoki-egami/PopCon
+BugReports: http://github.com/naoki-egami/PopCon/issues
