@@ -15,6 +15,11 @@
 #' @param cv.type (when type = gash-anova or genlasso) `cv.1Std`` (stronger) or `cv.min` (weaker).
 #' @param boot (when type = gash-anova or genlasso) the number of bootstrap
 #' @param seed seed for bootstrap
+#' @import Hmisc
+#' @import FindIt
+#' @import prodlim
+#' @import clubSandwich
+#' @import igraph
 #' @export
 
 AME_estimate_full <- function(formula,
