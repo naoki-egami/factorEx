@@ -15,11 +15,12 @@
 #' @param cv.type (when type = gash-anova or genlasso) `cv.1Std`` (stronger) or `cv.min` (weaker).
 #' @param boot (when type = gash-anova or genlasso) the number of bootstrap
 #' @param seed seed for bootstrap
-#' @import Hmisc
-#' @import FindIt
-#' @import prodlim
-#' @import clubSandwich
-#' @import igraph
+#' @importFrom Hmisc find.matches
+#' @importFrom FindIt cv.CausalANOVA CausalANOVA
+#' @importFrom prodlim row.match
+#' @importFrom clubSandwich vcovCR
+#' @importFrom igraph graph_from_adjacency_matrix
+#' @import arm
 #' @export
 
 AME_estimate_full <- function(formula,
@@ -87,6 +88,4 @@ AME_estimate_full <- function(formula,
                                           eps = 0.0001)
   }
   return(out)
-
-
 }

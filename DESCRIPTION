@@ -14,6 +14,7 @@ Imports:
     Hmisc,
     clubSandwich,
     igraph,
-    FindIt
+    FindIt,
+    arm
 URL: http://github.com/naoki-egami/PopCon
 BugReports: http://github.com/naoki-egami/PopCon/issues
