@@ -17,7 +17,7 @@
 #' @param seed seed for bootstrap
 #' @importFrom FindIt cv.CausalANOVA CausalANOVA
 #' @importFrom prodlim row.match
-#' @importFrom clubSandwich vcovCR
+#' @import sandwich
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @import arm
 #' @export

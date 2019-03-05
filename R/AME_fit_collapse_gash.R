@@ -191,12 +191,9 @@ AME.collapse.crossfit <- function(formula,
 
   train_id <- sample(unique(data$cluster), size = floor(length(unique(data$cluster))/2), replace = FALSE)
   test_id  <- setdiff(unique(data$cluster), train_id)
-  max_cl <- max(table(data$cluster))
 
-  mat_train <- c(t(find.matches(train_id, data$cluster, maxmatch = max_cl)$matches))
-  train_which <- mat_train[mat_train > 0]
-  mat_test <- c(t(find.matches(test_id, data$cluster, maxmatch = max_cl)$matches))
-  test_which <- mat_test[mat_test > 0]
+  train_which <- unlist(sapply(train_id, function(x) which(data$cluster == x)))
+  test_which  <- unlist(sapply(test_id, function(x) which(data$cluster == x)))}
 
   data_train <- data[train_which, ]
   data_test  <- data[test_which, ]
