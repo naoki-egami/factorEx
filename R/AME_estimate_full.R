@@ -15,7 +15,6 @@
 #' @param cv.type (when type = gash-anova or genlasso) `cv.1Std`` (stronger) or `cv.min` (weaker).
 #' @param boot (when type = gash-anova or genlasso) the number of bootstrap
 #' @param seed seed for bootstrap
-#' @importFrom Hmisc find.matches
 #' @importFrom FindIt cv.CausalANOVA CausalANOVA
 #' @importFrom prodlim row.match
 #' @importFrom clubSandwich vcovCR

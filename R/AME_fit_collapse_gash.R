@@ -132,18 +132,19 @@ AME.collapse.crossfit.boot <- function(formula,
 
   cat("\nBootstrap:")
   fit.mat <- c()
-  max_cl <- max(table(data$cluster))
+  all_eq <- all(table(data$cluster) == table(data$cluster)[1])
 
   for(b in 1:boot){
 
     seed.b <- seed + 1000*b
     set.seed(seed.b)
-    boot_id   <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace = TRUE)
-    mat_base  <- find.matches(boot_id, data$cluster, maxmatch = max_cl)$matches
-    mat_boot <- c(t(mat_base))
-    boot_which <- mat_boot[mat_boot > 0]
-    data_boot <- data[boot_which, ]
-    data_boot$cluster <- rep(seq(1:nrow(mat_base)), times = apply(mat_base, 1, function(x) sum(x > 0)))
+    boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
+    # create bootstap sample with sapply
+    boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
+    if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
+    }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
+    data_boot <- data[unlist(boot_which),]
+    data_boot$cluster <- new_boot_id
     data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
 
     fit <- AME.collapse.crossfit(formula = formula,
