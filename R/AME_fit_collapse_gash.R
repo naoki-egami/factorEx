@@ -193,7 +193,7 @@ AME.collapse.crossfit <- function(formula,
   test_id  <- setdiff(unique(data$cluster), train_id)
 
   train_which <- unlist(sapply(train_id, function(x) which(data$cluster == x)))
-  test_which  <- unlist(sapply(test_id, function(x) which(data$cluster == x)))}
+  test_which  <- unlist(sapply(test_id, function(x) which(data$cluster == x)))
 
   data_train <- data[train_which, ]
   data_test  <- data[test_which, ]
