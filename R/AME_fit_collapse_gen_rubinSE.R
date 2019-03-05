@@ -55,13 +55,13 @@ fit.after.collapse.gen <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
 
-  tableAME <- AME.fit(formula,
-                      data = c_data_mar$data_new, pair=pair,
-                      marginal_dist = marginal_dist_c,
-                      marginal_dist_u_list = marginal_dist_u_list,
-                      marginal_dist_u_base = marginal_dist_u_base,
-                      marginal_type = marginal_type,
-                      difference = difference)
+  tableAME <- AME.fit.SE(formula,
+                         data = c_data_mar$data_new, pair=pair,
+                         marginal_dist = marginal_dist_c,
+                         marginal_dist_u_list = marginal_dist_u_list,
+                         marginal_dist_u_base = marginal_dist_u_base,
+                         marginal_type = marginal_type,
+                         difference = difference)
 
   # Expand
   type_l <- length(unique(tableAME_base$type))
@@ -74,10 +74,11 @@ fit.after.collapse.gen <- function(formula,
     tableAME_base_sub <- tableAME_base[tableAME_base$factor == fac_name[z],]
     tableAME_base_sub$level_num <- collapse_level[[fac_name[z]]][match(tableAME_base_sub$level, original_level[[fac_name[z]]])]
 
-    tableAME_use <- merge(tableAME_base_sub, tableAME_sub[, c("type", "level_num", "estimate")],
+    tableAME_use <- merge(tableAME_base_sub, tableAME_sub[, c("type", "level_num", "estimate", "se")],
                           by = c("type", "level_num"), all.x = TRUE, all.y = FALSE)
     tableAME_use <- tableAME_use[row.match(tableAME_base_sub[, c("type", "level")], tableAME_use[, c("type", "level")]), ]
     tableAME_use$estimate[tableAME_use$level_num == 1] <- 0
+    tableAME_use$se[tableAME_use$level_num == 1] <- 0
     tableAME_new <- rbind(tableAME_new, tableAME_use)
   }
   tableAME_new$level_num <- NULL
@@ -86,20 +87,18 @@ fit.after.collapse.gen <- function(formula,
 }
 
 
-AME.collapse.genlasso.crossfit.boot <- function(formula,
-                                                data,
-                                                pair = FALSE,
-                                                fac.level, ord.fac,
-                                                cv.type = "cv.1Std",
-                                                seed = 1234, nfolds = 2,
-                                                marginal_dist,
-                                                marginal_type,
-                                                difference = FALSE,
-                                                boot = 100,
-                                                tableAME_base,
-                                                eps = 0.0001){
-
-
+AME.collapse.genlasso.crossfit.boot.rubinSE <- function(formula,
+                                                        data,
+                                                        pair = FALSE,
+                                                        fac.level, ord.fac,
+                                                        cv.type = "cv.1Std",
+                                                        seed = 1234, nfolds = 2,
+                                                        marginal_dist,
+                                                        marginal_type,
+                                                        difference = FALSE,
+                                                        boot = 100,
+                                                        tableAME_base,
+                                                        eps = 0.0001){
 
   factor_l <- length(all.vars(formula)[-1])
   combMat <- combn(factor_l,2); intNames <- c()
@@ -119,7 +118,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   data <- data[order(data$cluster), ]
 
   cat("Bootstrap:")
-  fit.mat <- c()
+  fit.mat <- fit.mat_se <- c()
   max_cl <- max(table(data$cluster))
   for(b in 1:boot){
 
@@ -144,28 +143,30 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
     # seed.b <- seed + 1000*b
 
-    fit <- AME.collapse.gen.crossfit(formula = formula,
-                                     formula_full = formula_full,
-                                     data = data_boot,
-                                     pair = pair,
-                                     fac.level = fac.level, ord.fac = ord.fac,
-                                     seed = seed.b, nfolds = nfolds,
-                                     cv.type = cv.type,
-                                     cv.lambda = cv.lambda,
-                                     marginal_dist = marginal_dist,
-                                     marginal_type = marginal_type,
-                                     difference = difference,
-                                     tableAME_base = tableAME_base,
-                                     eps = eps)
+    fit <- AME.collapse.gen.crossfit.rubinSE(formula = formula,
+                                             formula_full = formula_full,
+                                             data = data_boot,
+                                             pair = pair,
+                                             fac.level = fac.level, ord.fac = ord.fac,
+                                             seed = seed.b, nfolds = nfolds,
+                                             cv.type = cv.type,
+                                             cv.lambda = cv.lambda,
+                                             marginal_dist = marginal_dist,
+                                             marginal_type = marginal_type,
+                                             difference = difference,
+                                             tableAME_base = tableAME_base,
+                                             eps = eps)
 
     if(b == 1) fit_0 <- fit
     if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
     fit.mat <- cbind(fit.mat, fit[,4])
+    fit.mat_se <- cbind(fit.mat_se, fit[,5])
 
-    if(b%%10 == 0) cat(paste(b, "..", sep=""))
+    cat(paste(b, "..", sep=""))
   }
   estimate <- apply(fit.mat, 1, mean)
-  se <- apply(fit.mat, 1, sd)
+  # se <- apply(fit.mat, 1, sd)
+  se <- sqrt(apply(fit.mat_se, 1, function(x) mean(x^2)) +  apply(fit.mat - estimate, 1, function(x) mean(x^2)))
   low.ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
   high.ci <- apply(fit.mat, 1, function(x) quantile(x, 0.975))
 
@@ -176,19 +177,19 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   return(fit)
 }
 
-AME.collapse.gen.crossfit <- function(formula,
-                                      formula_full,
-                                      data,
-                                      pair=FALSE,
-                                      cv.lambda,
-                                      fac.level,
-                                      ord.fac,
-                                      seed, nfolds, cv.type,
-                                      marginal_dist,
-                                      marginal_type,
-                                      difference = FALSE,
-                                      tableAME_base,
-                                      eps){
+AME.collapse.gen.crossfit.rubinSE <- function(formula,
+                                              formula_full,
+                                              data,
+                                              pair=FALSE,
+                                              cv.lambda,
+                                              fac.level,
+                                              ord.fac,
+                                              seed, nfolds, cv.type,
+                                              marginal_dist,
+                                              marginal_type,
+                                              difference = FALSE,
+                                              tableAME_base,
+                                              eps){
 
   data <- data[order(data$cluster), ]
 
@@ -219,7 +220,6 @@ AME.collapse.gen.crossfit <- function(formula,
                                        marginal_type = marginal_type,
                                        tableAME_base = tableAME_base,
                                        difference = difference)
-
   # Fit 2
   fit_col_2 <- collapase.fit.gen(formula = formula,
                                  data = data_test, pair = pair,
@@ -236,9 +236,14 @@ AME.collapse.gen.crossfit <- function(formula,
                                        tableAME_base = tableAME_base,
                                        difference = difference)
 
+  # Rubin SE
+  mean_est <- (tableAME_1$estimate+tableAME_2$estimate)
+  var_est  <- (tableAME_1$se^2 + tableAME_2$se^2 + (tableAME_1$estimate - mean_est)^2 + (tableAME_2$estimate - mean_est)^2)/2
+
   # check
   # print(paste("Check:", all(tableAME_1[,3] == tableAME_2[,3]), sep = ""))
-  tableAME_1$estimate <- (tableAME_1$estimate + tableAME_2$estimate)/2
+  tableAME_1$estimate <- mean_est
+  tableAME_1$se  <- sqrt(var_est)
 
   marginal_dist_u_list <- list()
   for(z in 1:length(marginal_dist)){
@@ -249,11 +254,11 @@ AME.collapse.gen.crossfit <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   ## Add STD
-  table_STD <- AME.fit.STD(formula = formula,
-                           data = data,
-                           pair = pair,
-                           marginal_dist = marginal_dist,
-                           marginal_dist_u_base = marginal_dist_u_base)
+  table_STD <- AME.fit.STD.se(formula = formula,
+                              data = data,
+                              pair = pair,
+                              marginal_dist = marginal_dist,
+                              marginal_dist_u_base = marginal_dist_u_base)
 
   # Insert into the main table
   uniq_fac <- unique(tableAME_1$factor)
@@ -269,10 +274,12 @@ AME.collapse.gen.crossfit <- function(formula,
       if(difference == TRUE){
         tableAME_add <- data.frame(matrix(NA, ncol = 0, nrow = length(marginal_type)))
         dif_est  <- tableAME_1_main_m[2:(1+length(marginal_type)), "estimate"] - STD_base$estimate
+        dif_se   <- sqrt(tableAME_1_main_m[2:(1+length(marginal_type)), "se"]^2 + STD_base$se^2)
         tableAME_add$type <- paste(marginal_type,"-STD",sep="")
         tableAME_add$factor <- rep(uniq_fac[i], length(marginal_type))
         tableAME_add$level <- rep(uniq_level[j], length(marginal_type))
         tableAME_add$estimate <- dif_est
+        tableAME_add$se <- dif_se
         tableAME_1_main_m <- rbind(tableAME_1_main_m, tableAME_add)
       }
       tableAME_full <- rbind(tableAME_full, tableAME_1_main_m)
@@ -281,14 +288,14 @@ AME.collapse.gen.crossfit <- function(formula,
   return(tableAME_full)
 }
 
-AME.fit <- function(formula_full,
-                    data,
-                    pair=FALSE,
-                    marginal_dist,
-                    marginal_dist_u_list,
-                    marginal_dist_u_base,
-                    marginal_type,
-                    difference = FALSE){
+AME.fit.SE <- function(formula_full,
+                       data,
+                       pair=FALSE,
+                       marginal_dist,
+                       marginal_dist_u_list,
+                       marginal_dist_u_base,
+                       marginal_type,
+                       difference = FALSE){
   # Differencing ----------
   if(pair==TRUE){
     data0 <- data[order(data$pair_id),]
@@ -303,7 +310,7 @@ AME.fit <- function(formula_full,
     y <- model.frame(formula_full,data=data1)[ ,1]
     # base_name <- c("(Intercept)", colnames(X1))
   }else{
-    cluster_original <- data$cluster
+    cluster <- data$cluster
     X <- model.matrix(formula_full, data=data)
     y <- model.frame(formula_full, data=data)[,1]
     # base_name <- colnames(X)
@@ -317,15 +324,15 @@ AME.fit <- function(formula_full,
   base_name <- sub("X", "", names(coefInt))
   # base_name <- gsub(" ", "", base_name)
   names(coefInt) <- base_name
-  # vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
-  # colnames(vcovInt) <- rownames(vcovInt) <- base_name
+  vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
+  colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
   # Estimate AMEs ----------
   table_AME <- c()
   for(m in 1:nrow(marginal_dist_u_base)){
     coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
-    # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
-    #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+    vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+                          grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
     if(length(coef_focus) > 0){
       estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
       estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
@@ -337,12 +344,12 @@ AME.fit <- function(formula_full,
         coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
         # Compute AMEs
         coef_AME <- sum(coef_focus * coef_prop)
-        # se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
+        se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
         AME <- data.frame(matrix(NA, ncol = 0, nrow=1))
         AME$type <- marginal_type[z]
         AME$factor   <- marginal_dist[[z]][m,1]; AME$level <- marginal_dist[[z]][m,2]
         AME$estimate <- coef_AME;
-        # AME$se <- se_AME
+        AME$se <- se_AME
         table_AME_m <- rbind(table_AME_m, AME)
       }
       if(difference == TRUE){
@@ -354,78 +361,80 @@ AME.fit <- function(formula_full,
           # Compute AMEs
           coef_prop_d <- (coef_prop - coef_prop0)
           coef_AME_dif <- sum(coef_focus * coef_prop_d)
-          # se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
+          se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
           AME_dif <- data.frame(matrix(NA, ncol = 0, nrow=1))
           AME_dif$type <- paste(marginal_type[z],"-",marginal_type[1],sep="")
           AME_dif$factor   <- marginal_dist[[z]][m,1]; AME_dif$level <- marginal_dist[[z]][m,2]
           AME_dif$estimate <- coef_AME_dif;
-          # AME_dif$se <- se_AME_dif
+          AME_dif$se <- se_AME_dif
           table_AME_m <- rbind(table_AME_m, AME_dif)
         }
       }
       table_AME <- rbind(table_AME, table_AME_m)
     }
   }
-  colnames(table_AME) <- c("type", "factor", "level", "estimate")
+  colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
   return(table_AME)
 }
 
-AME.fit.STD <- function(formula,
-                        data,
-                        pair=FALSE,
-                        marginal_dist,
-                        marginal_dist_u_base){
-  # Differencing ----------
-  if(pair==TRUE){
-    data0 <- data[order(data$pair_id),]
-    side <- rep(c(1,0),times=nrow(data0)/2)
-    data1 <- data0[side==1,]
-    data2 <- data0[side==0,]
-    cluster_original <- data$cluster
-    cluster <- data$cluster[side==1]
-    X1 <- model.matrix(formula, data=data1)[ ,-1]
-    X2 <- model.matrix(formula, data=data2)[ ,-1]
-    X <- cbind(1, X1 - X2)
-    y <- model.frame(formula,data=data1)[ ,1]
-    # base_name <- c("(Intercept)", colnames(X1))
-  }else{
-    cluster_original <- data$cluster
-    X <- model.matrix(formula, data=data)
-    y <- model.frame(formula, data=data)[,1]
-    # base_name <- colnames(X)
-    side <- NULL
-  }
 
-  # Fit the model ----------
-  main_lm <- lm(y ~ X - 1)
-  coefInt <- coef(main_lm)
-  coefInt <- coefInt[is.na(coefInt) == FALSE]
-  base_name <- sub("X", "", names(coefInt))
-  # base_name <- gsub(" ", "", base_name)
-  names(coefInt) <- base_name
-  # vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
-  # colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
-  # Estimate AMEs ----------
-  table_AME <- c()
-  for(m in 1:nrow(marginal_dist_u_base)){
-    coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
-    # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
-    #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
-    if(length(coef_focus) > 0){
-      estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
-      estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
-
-      table_AME_m <- data.frame(matrix(NA, ncol = 0, nrow=1))
-      table_AME_m$type <- "STD"
-      table_AME_m$factor   <- marginal_dist[[1]][m,1]; table_AME_m$level <- marginal_dist[[1]][m,2]
-      table_AME_m$estimate <- coef_focus;
-      table_AME <- rbind(table_AME, table_AME_m)
-    }
-  }
-  colnames(table_AME) <- c("type", "factor", "level", "estimate")
-  return(table_AME)
-}
+# AME.fit.STD <- function(formula,
+#                         data,
+#                         pair=FALSE,
+#                         marginal_dist,
+#                         marginal_dist_u_base){
+#   # Differencing ----------
+#   if(pair==TRUE){
+#     data0 <- data[order(data$pair_id),]
+#     side <- rep(c(1,0),times=nrow(data0)/2)
+#     data1 <- data0[side==1,]
+#     data2 <- data0[side==0,]
+#     cluster_original <- data$cluster
+#     cluster <- data$cluster[side==1]
+#     X1 <- model.matrix(formula, data=data1)[ ,-1]
+#     X2 <- model.matrix(formula, data=data2)[ ,-1]
+#     X <- cbind(1, X1 - X2)
+#     y <- model.frame(formula,data=data1)[ ,1]
+#     # base_name <- c("(Intercept)", colnames(X1))
+#   }else{
+#     cluster_original <- data$cluster
+#     X <- model.matrix(formula, data=data)
+#     y <- model.frame(formula, data=data)[,1]
+#     # base_name <- colnames(X)
+#     side <- NULL
+#   }
+#
+#   # Fit the model ----------
+#   main_lm <- lm(y ~ X - 1)
+#   coefInt <- coef(main_lm)
+#   coefInt <- coefInt[is.na(coefInt) == FALSE]
+#   base_name <- sub("X", "", names(coefInt))
+#   # base_name <- gsub(" ", "", base_name)
+#   names(coefInt) <- base_name
+#   # vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
+#   # colnames(vcovInt) <- rownames(vcovInt) <- base_name
+#
+#   # Estimate AMEs ----------
+#   table_AME <- c()
+#   for(m in 1:nrow(marginal_dist_u_base)){
+#     coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
+#     # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+#     #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+#     if(length(coef_focus) > 0){
+#       estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
+#       estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+#
+#       table_AME_m <- data.frame(matrix(NA, ncol = 0, nrow=1))
+#       table_AME_m$type <- "STD"
+#       table_AME_m$factor   <- marginal_dist[[1]][m,1]; table_AME_m$level <- marginal_dist[[1]][m,2]
+#       table_AME_m$estimate <- coef_focus;
+#       table_AME <- rbind(table_AME, table_AME_m)
+#     }
+#   }
+#   colnames(table_AME) <- c("type", "factor", "level", "estimate")
+#   return(table_AME)
+# }
 
 
 # GenLasso Collapsing

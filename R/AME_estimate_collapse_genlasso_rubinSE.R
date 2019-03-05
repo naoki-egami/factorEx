@@ -5,18 +5,18 @@
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
 #' @export
 
-AME_estimate_collapse_genlasso <- function(formula,
-                                           data,
-                                           ord.fac,
-                                           pair=FALSE, pair_id = NULL,
-                                           cluster = NULL,
-                                           marginal_dist,
-                                           marginal_type,
-                                           difference = FALSE,
-                                           cv.type = "cv.1Std",
-                                           seed = 1234, nfolds = 2,
-                                           boot = 100,
-                                           eps = 0.0001){
+AME_estimate_collapse_genlasso_rubinSE <- function(formula,
+                                                   data,
+                                                   ord.fac,
+                                                   pair=FALSE, pair_id = NULL,
+                                                   cluster = NULL,
+                                                   marginal_dist,
+                                                   marginal_type,
+                                                   difference = FALSE,
+                                                   cv.type = "cv.1Std",
+                                                   seed = 1234, nfolds = 2,
+                                                   boot = 100,
+                                                   eps = 0.0001){
 
   ###########
   ## Check ##
@@ -110,18 +110,18 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   if(missing(ord.fac)) ord.fac <- rep(TRUE, factor_l)
 
-  table_AME <- AME.collapse.genlasso.crossfit.boot(formula = formula,
-                                                   data = data,
-                                                   pair = pair,
-                                                   fac.level = fac.level, ord.fac = ord.fac,
-                                                   marginal_dist = marginal_dist,
-                                                   marginal_type = marginal_type,
-                                                   difference = difference,
-                                                   boot = boot,
-                                                   cv.type = cv.type,
-                                                   nfolds = nfolds, seed = seed,
-                                                   tableAME_base = tableAME_base,
-                                                   eps = eps)
+  table_AME <- AME.collapse.genlasso.crossfit.boot.rubinSE(formula = formula,
+                                                           data = data,
+                                                           pair = pair,
+                                                           fac.level = fac.level, ord.fac = ord.fac,
+                                                           marginal_dist = marginal_dist,
+                                                           marginal_type = marginal_type,
+                                                           difference = difference,
+                                                           boot = boot,
+                                                           cv.type = cv.type,
+                                                           nfolds = nfolds, seed = seed,
+                                                           tableAME_base = tableAME_base,
+                                                           eps = eps)
 
 
   ## For Each Factor
