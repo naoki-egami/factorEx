@@ -141,7 +141,11 @@ AME.collapse.crossfit.boot <- function(formula,
     mat_boot <- c(t(mat_base))
     boot_which <- mat_boot[mat_boot > 0]
     data_boot <- data[boot_which, ]
-    data_boot$cluster <- rep(seq(1:nrow(mat_base)), times = apply(mat_base, 1, function(x) sum(x > 0)))
+    if(max_cl == 1){
+      data_boot$cluster <- mat_base
+    }else{
+      data_boot$cluster <- rep(seq(1:nrow(mat_base)), times = apply(mat_base, 1, function(x) sum(x > 0)))
+    }
     data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
 
     fit <- AME.collapse.crossfit(formula = formula,
