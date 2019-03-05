@@ -126,9 +126,11 @@ AME.collapse.crossfit.boot <- function(formula,
   if(cv.type == "cv.1Std") collapse.cost <- cv.fit$cv.1Std
   if(cv.type == "cv.min")  collapse.cost <- cv.fit$cv.min
 
+  cat(paste("Selected cost parameter:", collapse.cost, sep = ""))
+
   data <- data[order(data$cluster), ]
 
-  cat("Bootstrap:")
+  cat("\nBootstrap:")
   fit.mat <- c()
   max_cl <- max(table(data$cluster))
 
