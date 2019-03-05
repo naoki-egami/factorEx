@@ -185,7 +185,7 @@ AME.fit.STD.se <- function(formula,
   base_name <- sub("X", "", names(coefInt))
   # base_name <- gsub(" ", "", base_name)
   names(coefInt) <- base_name
-  vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
+  vcovInt <- cluster_se_glm(main_lm, cluster = as.factor(cluster))
   colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
   # Estimate AMEs ----------
@@ -207,5 +207,55 @@ AME.fit.STD.se <- function(formula,
   }
   colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
   return(table_AME)
+}
+
+cluster_se_glm <- function(model, cluster){
+
+  #  Drop unused cluster indicators, if cluster var is a factor
+  if (class(cluster) == "factor") {
+    cluster <- droplevels(cluster)
+  }
+
+  if (nrow(model.matrix(model)) != length(cluster)) {
+    stop("check your data: cluster variable has different N than model - you may have observations with missing data")
+  }
+
+  M <- length(unique(cluster))
+  N <- length(cluster)
+  K <- model$rank
+
+  ## if(M<50) {
+  ##     warning("Fewer than 50 clusters, variances may be unreliable (could try block bootstrap instead).")
+  ## }
+
+  dfc <- (M/(M - 1)) * ((N - 1)/(N - K))
+  uj  <- apply(estfun(model), 2, function(x) tapply(x, cluster, sum));
+  rcse.cov <- dfc * sandwich(model, meat. = crossprod(uj)/N)
+  return(rcse.cov)
+}
+
+cluster_se_glm <- function(model, cluster){
+
+  #  Drop unused cluster indicators, if cluster var is a factor
+  if (class(cluster) == "factor") {
+    cluster <- droplevels(cluster)
+  }
+
+  if (nrow(model.matrix(model)) != length(cluster)) {
+    stop("check your data: cluster variable has different N than model - you may have observations with missing data")
+  }
+
+  M <- length(unique(cluster))
+  N <- length(cluster)
+  K <- model$rank
+
+  ## if(M<50) {
+  ##     warning("Fewer than 50 clusters, variances may be unreliable (could try block bootstrap instead).")
+  ## }
+
+  dfc <- (M/(M - 1)) * ((N - 1)/(N - K))
+  uj  <- apply(estfun(model), 2, function(x) tapply(x, cluster, sum));
+  rcse.cov <- dfc * sandwich(model, meat. = crossprod(uj)/N)
+  return(rcse.cov)
 }
 
