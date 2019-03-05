@@ -105,7 +105,7 @@ AME_estimate <- function(formula,
   coefInt <- coefInt[is.na(coefInt) == FALSE]
   base_name <- sub("X", "", names(coefInt))
   names(coefInt) <- base_name
-  vcovInt <- vcovCR(main_lm, cluster = as.factor(cluster), type = "CR2")
+  vcovInt <- cluster_se_glm(main_lm, cluster = as.factor(cluster))
   colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
   # Transform marginal_dist (for internal simplisity) ----------
