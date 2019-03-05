@@ -113,19 +113,21 @@ AME_estimate_collapse_gash <- function(formula,
 
   if(missing(ord.fac)) ord.fac <- rep(TRUE, factor_l)
 
-  table_AME <- AME.collapse.crossfit.boot(formula = formula,
-                                          data = data,
-                                          pair = pair,
-                                          cv.collapse.cost = cv.collapse.cost,
-                                          marginal_dist = marginal_dist,
-                                          marginal_type = marginal_type,
-                                          difference = difference,
-                                          boot = boot, family = family,
-                                          nway = nway,
-                                          cv.type = cv.type,
-                                          tableAME_base = tableAME_base,
-                                          seed = seed)
+  table_AME_f <- AME.collapse.crossfit.boot(formula = formula,
+                                            data = data,
+                                            pair = pair,
+                                            cv.collapse.cost = cv.collapse.cost,
+                                            marginal_dist = marginal_dist,
+                                            marginal_type = marginal_type,
+                                            difference = difference,
+                                            boot = boot, family = family,
+                                            nway = nway,
+                                            cv.type = cv.type,
+                                            tableAME_base = tableAME_base,
+                                            seed = seed)
 
+  table_AME <- table_AME_f$fit
+  boot_AME  <- table_AME_f$fit.mat
 
   ## For Each Factor
   AME <- list()
@@ -143,6 +145,7 @@ AME_estimate_collapse_gash <- function(formula,
 
   output <- list("AME" = AME, "baseline" = baseline,
                  "type_all" = type_all, "type_difference" = type_difference,
+                 "boot_AME" = boot_AME,
                  "input" = input)
   return(output)
 }

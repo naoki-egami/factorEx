@@ -163,7 +163,9 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   fit$se <- se
   fit$low.ci <- low.ci
   fit$high.ci <- high.ci
-  return(fit)
+
+  out <- list("fit" = fit, "fit.mat" = fit.mat)
+  return(out)
 }
 
 AME.collapse.gen.crossfit <- function(formula,
@@ -519,7 +521,7 @@ col.genlasso <- function(formula,
   #cv.sd1
   cv.sd.each <- apply(MSE, 2, sd)
   cv.sd1.value <- min(cv.error) + cv.sd.each[which.min(cv.error)]
-  cv.sd1 <- max(cv.lambda[cv.error < cv.sd1.value])
+  cv.sd1 <- max(cv.lambda[cv.error <= cv.sd1.value])
 
   if(cv.type == "cv.1Std") lambda_u <- cv.sd1
   if(cv.type == "cv.min")  lambda_u <- cv.min

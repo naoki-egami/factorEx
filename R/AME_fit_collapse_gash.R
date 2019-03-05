@@ -170,7 +170,9 @@ AME.collapse.crossfit.boot <- function(formula,
 
   fit[,4] <- estimate
   fit$se <- se
-  return(fit)
+
+  out <- list("fit" = fit, "fit.mat" = fit.mat)
+  return(out)
 }
 
 AME.collapse.crossfit <- function(formula,

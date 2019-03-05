@@ -110,7 +110,7 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   if(missing(ord.fac)) ord.fac <- rep(TRUE, factor_l)
 
-  table_AME <- AME.collapse.genlasso.crossfit.boot(formula = formula,
+  table_AME_f <- AME.collapse.genlasso.crossfit.boot(formula = formula,
                                                    data = data,
                                                    pair = pair,
                                                    fac.level = fac.level, ord.fac = ord.fac,
@@ -123,6 +123,8 @@ AME_estimate_collapse_genlasso <- function(formula,
                                                    tableAME_base = tableAME_base,
                                                    eps = eps)
 
+  table_AME <- table_AME_f$fit
+  boot_AME  <- table_AME_f$fit.mat
 
   ## For Each Factor
   AME <- list()
@@ -140,6 +142,7 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   output <- list("AME" = AME, "baseline" = baseline,
                  "type_all" = type_all, "type_difference" = type_difference,
+                 "boot_AME" = boot_AME,
                  "input" = input)
   return(output)
 }
