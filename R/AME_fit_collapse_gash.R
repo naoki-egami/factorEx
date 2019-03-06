@@ -101,8 +101,7 @@ AME.collapse.crossfit.boot <- function(formula,
                                        family,
                                        difference = FALSE,
                                        boot = 100,
-                                       tableAME_base,
-                                       seed){
+                                       tableAME_base){
 
 
 
@@ -136,8 +135,8 @@ AME.collapse.crossfit.boot <- function(formula,
 
   for(b in 1:boot){
 
-    seed.b <- seed + 1000*b
-    set.seed(seed.b)
+    # seed.b <- seed + 1000*b
+    # set.seed(seed.b)
     boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
     # create bootstap sample with sapply
     boot_which <- sapply(boot_id, function(x) which(data$cluster == x))

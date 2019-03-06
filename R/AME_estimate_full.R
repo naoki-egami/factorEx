@@ -47,6 +47,8 @@ AME_estimate_full <- function(formula,
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
 
+  set.seed(seed)
+
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
                          data = data,
@@ -69,8 +71,7 @@ AME_estimate_full <- function(formula,
                                       nway = nway,
                                       cv.collapse.cost = cv.collapse.cost,
                                       cv.type = cv.type,
-                                      boot = boot,
-                                      seed = seed)
+                                      boot = boot)
 
   }else if(type == "genlasso"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
@@ -83,7 +84,6 @@ AME_estimate_full <- function(formula,
                                           marginal_type = marginal_type,
                                           difference = difference,
                                           cv.type = cv.type,
-                                          seed = seed,
                                           nfolds = 2,
                                           boot = boot,
                                           eps = 0.0001)

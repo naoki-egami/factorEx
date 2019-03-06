@@ -2,14 +2,14 @@ collapase.fit.gen <- function(formula,
                               data, pair = TRUE,
                               cv.lambda,
                               fac.level, ord.fac,
-                              seed, nfolds,
+                              nfolds,
                               cv.type, eps = 0.0001){
 
   beta <- col.genlasso(formula = formula,
                        data = data, pair = pair,
                        cv.lambda = cv.lambda,
                        fac.level = fac.level, ord.fac = ord.fac,
-                       seed = seed, nfolds = nfolds,
+                       nfolds = nfolds,
                        cv.type = cv.type)
 
   fac.name <- all.vars(formula)[-1]
@@ -91,7 +91,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 pair = FALSE,
                                                 fac.level, ord.fac,
                                                 cv.type = "cv.1Std",
-                                                seed = 1234, nfolds = 2,
+                                                nfolds = 2,
                                                 marginal_dist,
                                                 marginal_type,
                                                 difference = FALSE,
@@ -123,8 +123,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
   for(b in 1:boot){
 
-    seed.b <- seed + 1000*b
-    set.seed(seed.b)
+    # seed.b <- seed + 1000*b
+    # set.seed(seed.b)
     boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
     # create bootstap sample with sapply
     boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
@@ -139,7 +139,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                      data = data_boot,
                                      pair = pair,
                                      fac.level = fac.level, ord.fac = ord.fac,
-                                     seed = seed.b, nfolds = nfolds,
+                                     nfolds = nfolds,
                                      cv.type = cv.type,
                                      cv.lambda = cv.lambda,
                                      marginal_dist = marginal_dist,
@@ -175,7 +175,7 @@ AME.collapse.gen.crossfit <- function(formula,
                                       cv.lambda,
                                       fac.level,
                                       ord.fac,
-                                      seed, nfolds, cv.type,
+                                      nfolds, cv.type,
                                       marginal_dist,
                                       marginal_type,
                                       difference = FALSE,
@@ -198,7 +198,7 @@ AME.collapse.gen.crossfit <- function(formula,
                                  data = data_train, pair = pair,
                                  cv.lambda = cv.lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,
-                                 seed = seed, nfolds = nfolds, cv.type = cv.type, eps = eps)
+                                 nfolds = nfolds, cv.type = cv.type, eps = eps)
 
   tableAME_1 <- fit.after.collapse.gen(formula = formula_full,
                                        newdata = data_test,
@@ -214,7 +214,7 @@ AME.collapse.gen.crossfit <- function(formula,
                                  data = data_test, pair = pair,
                                  cv.lambda = cv.lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,
-                                 seed = seed, nfolds = nfolds, cv.type = cv.type, eps = eps)
+                                 nfolds = nfolds, cv.type = cv.type, eps = eps)
 
   tableAME_2 <- fit.after.collapse.gen(formula = formula_full,
                                        newdata = data_train,
@@ -471,7 +471,7 @@ col.genlasso <- function(formula,
                          data, pair = TRUE,
                          cv.lambda,
                          fac.level, ord.fac,
-                         seed = 1234, nfolds = 5,
+                         nfolds = 5,
                          cv.type = "cv.1Std"){
 
   # Setup y and X
@@ -497,7 +497,7 @@ col.genlasso <- function(formula,
   fit   <- genlasso(X = X, y = y, D = D)
 
   # Cross Validation
-  set.seed(seed)
+  # set.seed(seed)
   foldid <- sample(rep(seq(nfolds), length = length(y)))
   MSE <- matrix(0, nrow = nfolds, ncol = length(cv.lambda))
   for (i in seq(nfolds)) {
