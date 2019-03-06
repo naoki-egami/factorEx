@@ -201,11 +201,17 @@ AME.collapse.crossfit <- function(formula,
   data_test  <- data[test_which, ]
 
   # Fit 1
-  fit_col_1 <- collapase.fit(formula = formula,
-                             family = family,
-                             data = data_train, pair = pair,
-                             nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-                             ord.fac = ord.fac)
+  tryCatch({fit_col_1 <- collapase.fit(formula = formula,
+                                       family = family,
+                                       data = data_train, pair = pair,
+                                       nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+                                       ord.fac = ord.fac)
+  }, error=function(e){
+    cat(paste("warning: no collapsing"))
+    dat_sub <- model.frame(formula, data = data_train)
+    fit_col_1 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
+    rm(dat_sub)
+  })
 
   tableAME_1 <- fit.after.collapse(formula = formula_full,
                                    newdata = data_test,
@@ -217,11 +223,17 @@ AME.collapse.crossfit <- function(formula,
                                    difference = difference)
 
   # Fit 2
-  fit_col_2 <- collapase.fit(formula = formula,
+  tryCatch({fit_col_2 <- collapase.fit(formula = formula,
                              family = family,
                              data = data_test, pair = pair,
                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
                              ord.fac = ord.fac)
+  }, error=function(e){
+    cat(paste("warning: no collapsing"))
+    dat_sub <- model.frame(formula, data = data_test)
+    fit_col_2 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
+    rm(dat_sub)
+  })
 
   tableAME_2 <- fit.after.collapse(formula = formula_full,
                                    newdata = data_train,
