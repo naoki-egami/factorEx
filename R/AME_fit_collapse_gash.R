@@ -201,7 +201,7 @@ AME.collapse.crossfit <- function(formula,
   data_test  <- data[test_which, ]
 
   # Fit 1
-  tryCatch({fit_col_1 <- collapase.fit(formula = formula,
+  fit_col_1 <- tryCatch({collapase.fit(formula = formula,
                                        family = family,
                                        data = data_train, pair = pair,
                                        nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
@@ -211,6 +211,7 @@ AME.collapse.crossfit <- function(formula,
     dat_sub <- model.frame(formula, data = data_train)
     fit_col_1 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
     rm(dat_sub)
+    return(fit_col_1)
   })
 
   tableAME_1 <- fit.after.collapse(formula = formula_full,
@@ -223,7 +224,7 @@ AME.collapse.crossfit <- function(formula,
                                    difference = difference)
 
   # Fit 2
-  tryCatch({fit_col_2 <- collapase.fit(formula = formula,
+  fit_col_2 <- tryCatch({collapase.fit(formula = formula,
                              family = family,
                              data = data_test, pair = pair,
                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
@@ -233,6 +234,7 @@ AME.collapse.crossfit <- function(formula,
     dat_sub <- model.frame(formula, data = data_test)
     fit_col_2 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
     rm(dat_sub)
+    return(fit_col_2)
   })
 
   tableAME_2 <- fit.after.collapse(formula = formula_full,
