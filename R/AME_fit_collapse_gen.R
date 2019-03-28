@@ -1,16 +1,15 @@
 collapase.fit.gen <- function(formula,
                               data, pair = TRUE,
-                              cv.lambda,
+                              lambda,
                               fac.level, ord.fac,
-                              nfolds,
-                              cv.type, eps = 0.0001){
+                              eps = 0.0001,
+                              beta_weight){
 
   beta <- col.genlasso(formula = formula,
                        data = data, pair = pair,
-                       cv.lambda = cv.lambda,
+                       lambda = lambda,
                        fac.level = fac.level, ord.fac = ord.fac,
-                       nfolds = nfolds,
-                       cv.type = cv.type)
+                       beta_weight = beta_weight)
 
   fac.name <- all.vars(formula)[-1]
   # collapsing
@@ -97,7 +96,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 difference = FALSE,
                                                 boot = 100,
                                                 tableAME_base,
-                                                eps = 0.0001){
+                                                eps = 0.0001
+){
 
 
 
@@ -108,9 +108,27 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   }
   formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
 
+  # setup beta weights
+
+  beta_weight <- makeWeight(formula = formula, data = data, pair = pair,
+                            fac.level = fac.level, ord.fac = ord.fac)
+
+
+  cat("Cross-Validation: ")
   cv.lambda <- col.base.genlasso(formula = formula,
                                  data = data, pair = pair,
-                                 fac.level = fac.level, ord.fac = ord.fac)
+                                 fac.level = fac.level, ord.fac = ord.fac,
+                                 beta_weight = beta_weight)
+
+  cv.fit <- cv.genlasso(formula = formula,
+                        data = data, pair = pair,
+                        cv.lambda = cv.lambda,
+                        fac.level = fac.level, ord.fac = ord.fac,
+                        nfolds = nfolds,
+                        cv.type = cv.type,
+                        beta_weight = beta_weight)
+
+  lambda <- cv.fit
 
   # if(pair == TRUE){
   #   remove_id <- names(table(data$cluster))[table(data$cluster) %% 2 != 0]
@@ -118,7 +136,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   # }
   data <- data[order(data$cluster), ]
 
-  cat("Bootstrap:")
+  cat("\nBootstrap: ")
   fit.mat <- c()
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
   for(b in 1:boot){
@@ -139,20 +157,20 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                      data = data_boot,
                                      pair = pair,
                                      fac.level = fac.level, ord.fac = ord.fac,
-                                     nfolds = nfolds,
-                                     cv.type = cv.type,
-                                     cv.lambda = cv.lambda,
+                                     lambda = lambda,
                                      marginal_dist = marginal_dist,
                                      marginal_type = marginal_type,
                                      difference = difference,
                                      tableAME_base = tableAME_base,
-                                     eps = eps)
+                                     eps = eps,
+                                     beta_weight = beta_weight)
 
     if(b == 1) fit_0 <- fit
     if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
     fit.mat <- cbind(fit.mat, fit[,4])
 
-    if(b%%10 == 0) cat(paste(b, "..", sep=""))
+    if(b < 10) cat(paste(b, "..", sep=""))
+    if(b%%10 == 0) cat(paste(b, "...", sep=""))
   }
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
@@ -172,15 +190,15 @@ AME.collapse.gen.crossfit <- function(formula,
                                       formula_full,
                                       data,
                                       pair=FALSE,
-                                      cv.lambda,
+                                      lambda,
                                       fac.level,
                                       ord.fac,
-                                      nfolds, cv.type,
                                       marginal_dist,
                                       marginal_type,
                                       difference = FALSE,
                                       tableAME_base,
-                                      eps){
+                                      eps,
+                                      beta_weight){
 
   data <- data[order(data$cluster), ]
 
@@ -196,9 +214,10 @@ AME.collapse.gen.crossfit <- function(formula,
   # Fit 1
   fit_col_1 <- collapase.fit.gen(formula = formula,
                                  data = data_train, pair = pair,
-                                 cv.lambda = cv.lambda,
+                                 lambda = lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,
-                                 nfolds = nfolds, cv.type = cv.type, eps = eps)
+                                 eps = eps,
+                                 beta_weight = beta_weight)
 
   tableAME_1 <- fit.after.collapse.gen(formula = formula_full,
                                        newdata = data_test,
@@ -212,9 +231,10 @@ AME.collapse.gen.crossfit <- function(formula,
   # Fit 2
   fit_col_2 <- collapase.fit.gen(formula = formula,
                                  data = data_test, pair = pair,
-                                 cv.lambda = cv.lambda,
+                                 lambda = lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,
-                                 nfolds = nfolds, cv.type = cv.type, eps = eps)
+                                 eps = eps,
+                                 beta_weight = beta_weight)
 
   tableAME_2 <- fit.after.collapse.gen(formula = formula_full,
                                        newdata = data_train,
@@ -469,10 +489,9 @@ Collapse.genlasso <- function(beta, fac.level, ord.fac, fac.name, eps){
 
 col.genlasso <- function(formula,
                          data, pair = TRUE,
-                         cv.lambda,
+                         lambda,
                          fac.level, ord.fac,
-                         nfolds = 5,
-                         cv.type = "cv.1Std"){
+                         beta_weight){
 
   # Setup y and X
 
@@ -493,8 +512,110 @@ col.genlasso <- function(formula,
   # Setup D
   D <- makeD(fac.level = fac.level, ord.fac = ord.fac)
 
+  # incorporate weights
+  D_u <- as.numeric(beta_weight) * D
+
   # Fit Main
-  fit   <- genlasso(X = X, y = y, D = D)
+  fit   <- genlasso(X = X, y = y, D = D_u)
+
+  # # Cross Validation
+  # # set.seed(seed)
+  # foldid <- sample(rep(seq(nfolds), length = length(y)))
+  # MSE <- matrix(0, nrow = nfolds, ncol = length(cv.lambda))
+  # for (i in seq(nfolds)) {
+  #   which = foldid == i
+  #
+  #   X.cv   <- X[!which, ]
+  #   y.cv   <- y[!which]
+  #   X.test <- X[which, ]
+  #   y.test <- y[which]
+  #
+  #   fit.cv   <- genlasso(X = X.cv, y = y.cv, D = D)
+  #   beta.cv  <- coef(fit.cv, lambda = cv.lambda)$beta
+  #   MSE[i, 1:length(cv.lambda)] <- apply(y.test - X.test%*% beta.cv, 2, function(x) mean(x^2))
+  # }
+  # cv.error <- apply(MSE, 2, mean)
+  # names(cv.error) <- cv.lambda
+  #
+  # # cv.min
+  # cv.min <- cv.lambda[which.min(cv.error)]
+  #
+  # #cv.sd1
+  # cv.sd.each <- apply(MSE, 2, sd)
+  # cv.sd1.value <- min(cv.error) + cv.sd.each[which.min(cv.error)]
+  # cv.sd1 <- max(cv.lambda[cv.error <= cv.sd1.value])
+  #
+  # if(cv.type == "cv.1Std") lambda_u <- cv.sd1
+  # if(cv.type == "cv.min")  lambda_u <- cv.min
+
+  beta_fit <- coef(fit, lambda = lambda)$beta
+
+  return(beta_fit)
+}
+
+cv.genlasso <- function(formula,
+                        data, pair = TRUE,
+                        cv.lambda,
+                        fac.level, ord.fac,
+                        nfolds = 5,
+                        cv.type = "cv.1Std",
+                        beta_weight){
+
+  data <- data[order(data$cluster), ]
+  lambda_c <- c()
+
+  for(i in 1:5){
+    train_id <- sample(unique(data$cluster), size = floor(length(unique(data$cluster))/2), replace = FALSE)
+    train_which <- unlist(sapply(train_id, function(x) which(data$cluster == x)))
+    data_train <- data[train_which, ]
+
+    cv.fit <- cv.genlasso.base(formula = formula,
+                               data = data_train, pair = pair,
+                               cv.lambda = cv.lambda,
+                               fac.level = fac.level, ord.fac = ord.fac,
+                               nfolds = nfolds,
+                               cv.type = cv.type,
+                               beta_weight = beta_weight)
+    lambda_c[i] <- cv.fit
+    cat(paste(round(i*(100/5)),"%..",sep=""))
+  }
+  lambda <- mean(lambda_c)
+
+  return(lambda)
+}
+
+cv.genlasso.base <- function(formula,
+                        data, pair = TRUE,
+                        cv.lambda,
+                        fac.level, ord.fac,
+                        nfolds = 5,
+                        cv.type = "cv.1Std",
+                        beta_weight){
+
+  # Setup y and X
+
+  if(pair == TRUE){
+    data0 <- data[order(data$pair_id),]
+    side <- rep(c(1,0), times=nrow(data0)/2)
+    data1 <- data0[side==1,]
+    data2 <- data0[side==0,]
+    X1 <- model.matrix(formula, data=data1)[ ,-1]
+    X2 <- model.matrix(formula, data=data2)[ ,-1]
+    X <- cbind(1, X1 - X2)
+    y <- model.frame(formula,data=data1)[ ,1]
+  }else{
+    X <- model.matrix(formula, data=data)
+    y <- model.frame(formula, data=data)[,1]
+  }
+
+  # Setup D
+  D <- makeD(fac.level = fac.level, ord.fac = ord.fac)
+
+  # incorporate weights
+  D_u <- as.numeric(beta_weight) * D
+
+  # Fit Main
+  fit   <- genlasso(X = X, y = y, D = D_u)
 
   # Cross Validation
   # set.seed(seed)
@@ -508,7 +629,7 @@ col.genlasso <- function(formula,
     X.test <- X[which, ]
     y.test <- y[which]
 
-    fit.cv   <- genlasso(X = X.cv, y = y.cv, D = D)
+    fit.cv   <- genlasso(X = X.cv, y = y.cv, D = D_u)
     beta.cv  <- coef(fit.cv, lambda = cv.lambda)$beta
     MSE[i, 1:length(cv.lambda)] <- apply(y.test - X.test%*% beta.cv, 2, function(x) mean(x^2))
   }
@@ -526,14 +647,14 @@ col.genlasso <- function(formula,
   if(cv.type == "cv.1Std") lambda_u <- cv.sd1
   if(cv.type == "cv.min")  lambda_u <- cv.min
 
-  beta_fit <- coef(fit, lambda = lambda_u)$beta
-
-  return(beta_fit)
+  return(lambda_u)
 }
+
 
 col.base.genlasso <- function(formula,
                               data, pair = TRUE,
-                              fac.level, ord.fac){
+                              fac.level, ord.fac,
+                              beta_weight){
 
   # Setup y and X
   if(pair == TRUE){
@@ -553,8 +674,11 @@ col.base.genlasso <- function(formula,
   # Setup D
   D <- makeD(fac.level = fac.level, ord.fac = ord.fac)
 
+  # incorporate weights
+  D_u <- as.numeric(beta_weight) * D
+
   # Fit Main
-  fit   <- genlasso(X = X, y = y, D = D)
+  fit   <- genlasso(X = X, y = y, D = D_u)
 
   cv.lambda <- fit$lambda
   return(cv.lambda)
@@ -614,5 +738,62 @@ D1function.genlasso <- function(nlevel,ord = FALSE){
   return(D1.final)
   ## nrow = differences between main effects
   ## ncol = mainlevel (coefficients for the main factor)
+}
+
+# multiply D by column
+## number of samples, the number of factors,ordered
+## usual estimates
+## We only collapase with the first order model
+
+makeWeight <- function(formula,
+                       data, pair = TRUE,
+                       fac.level, ord.fac){
+
+  # Setup y and X
+  if(pair == TRUE){
+    data0 <- data[order(data$pair_id),]
+    side <- rep(c(1,0), times=nrow(data0)/2)
+    data1 <- data0[side==1,]
+    data2 <- data0[side==0,]
+    X1 <- model.matrix(formula, data=data1)[ ,-1]
+    X2 <- model.matrix(formula, data=data2)[ ,-1]
+    X <- cbind(1, X1 - X2)
+    y <- model.frame(formula,data=data1)[ ,1]
+  }else{
+    X <- model.matrix(formula, data=data)
+    y <- model.frame(formula, data=data)[,1]
+  }
+
+  # Fit the model ----------
+  main_lm <- lm(y ~ X - 1)
+  coefInt <- coef(main_lm)
+  coefInt <- coefInt[is.na(coefInt) == FALSE]
+
+  # Setup D
+  D <- makeD(fac.level = fac.level, ord.fac = ord.fac)
+
+  # original differences
+  w_orig <- 1/abs(D %*% coefInt)
+
+  # Standard weights
+  s_size <- lapply(model.frame(formula, data=data)[, -1], function(x) table(x))
+  w_add  <- c()
+  for(i in 1:length(fac.level)){
+    if(ord.fac[i] == TRUE){ # ordered
+      s_l <- length(s_size[[i]])
+      w_each <- sqrt(s_size[[i]][1:(s_l-1)] + s_size[[i]][2:s_l])
+      w_add  <- c(w_add, w_each)
+    }else { # unordered
+      s_l <- length(s_size[[i]])
+      combMat <- combn(s_l,2)
+      w_each <- sqrt(s_size[[i]][combMat[1,]] + s_size[[i]][combMat[2,]])/(1 + s_l)*2
+      w_add  <- c(w_add, w_each)
+    }
+  }
+  # Adaptive weights
+  w_final <- w_orig*w_add
+  w_final <- w_final/mean(w_final)
+
+  return(w_final)
 }
 

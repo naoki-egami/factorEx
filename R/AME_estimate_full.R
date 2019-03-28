@@ -34,11 +34,11 @@ AME_estimate_full <- function(formula,
                               family = "binomial",
                               nway = 1,
                               cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
-                              cv.type = "cv.1Std",
+                              cv.type = "cv.1Std", nfolds = 5,
                               boot = 100,
                               seed = 1234){
 
-  cat("You are using subversion: error-fix")
+  cat("Using Version 0.1.2\n")
 
   if((type %in% c("No-Reg","gash-anova", "genlasso")) == FALSE){
     warning(" 'type' should be one of 'No-Reg', 'gash-anova' and 'genalsso' ")
@@ -84,7 +84,7 @@ AME_estimate_full <- function(formula,
                                           marginal_type = marginal_type,
                                           difference = difference,
                                           cv.type = cv.type,
-                                          nfolds = 2,
+                                          nfolds = nfolds,
                                           boot = boot,
                                           eps = 0.0001)
   }

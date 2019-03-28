@@ -6,8 +6,8 @@
 \usage{
 AME_estimate_collapse_genlasso(formula, data, ord.fac, pair = FALSE,
   pair_id = NULL, cluster = NULL, marginal_dist, marginal_type,
-  difference = FALSE, cv.type = "cv.1Std", seed = 1234, nfolds = 2,
-  boot = 100, eps = 1e-04)
+  difference = FALSE, cv.type = "cv.1Std", nfolds = 2, boot = 100,
+  eps = 1e-04)
 }
 \arguments{
 \item{formula}{formula}
