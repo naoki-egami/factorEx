@@ -34,9 +34,11 @@ AME_estimate_full <- function(formula,
                               family = "binomial",
                               nway = 1,
                               cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
-                              cv.type = "cv.1Std",
+                              cv.type = "cv.1Std", nfolds = 5,
                               boot = 100,
                               seed = 1234){
+
+  cat("Using Version 0.1.2\n")
 
   if((type %in% c("No-Reg","gash-anova", "genlasso")) == FALSE){
     warning(" 'type' should be one of 'No-Reg', 'gash-anova' and 'genalsso' ")
@@ -44,6 +46,8 @@ AME_estimate_full <- function(formula,
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
+
+  set.seed(seed)
 
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
@@ -67,8 +71,7 @@ AME_estimate_full <- function(formula,
                                       nway = nway,
                                       cv.collapse.cost = cv.collapse.cost,
                                       cv.type = cv.type,
-                                      boot = boot,
-                                      seed = seed)
+                                      boot = boot)
 
   }else if(type == "genlasso"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
@@ -81,8 +84,7 @@ AME_estimate_full <- function(formula,
                                           marginal_type = marginal_type,
                                           difference = difference,
                                           cv.type = cv.type,
-                                          seed = seed,
-                                          nfolds = 2,
+                                          nfolds = nfolds,
                                           boot = boot,
                                           eps = 0.0001)
   }

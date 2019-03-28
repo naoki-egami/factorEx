@@ -14,7 +14,7 @@ AME_estimate_collapse_genlasso <- function(formula,
                                            marginal_type,
                                            difference = FALSE,
                                            cv.type = "cv.1Std",
-                                           seed = 1234, nfolds = 2,
+                                           nfolds = 2,
                                            boot = 100,
                                            eps = 0.0001){
 
@@ -119,7 +119,7 @@ AME_estimate_collapse_genlasso <- function(formula,
                                                    difference = difference,
                                                    boot = boot,
                                                    cv.type = cv.type,
-                                                   nfolds = nfolds, seed = seed,
+                                                   nfolds = nfolds,
                                                    tableAME_base = tableAME_base,
                                                    eps = eps)
 
