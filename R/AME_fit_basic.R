@@ -497,7 +497,7 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
 #' @export
 
-plot.cAME <- function(came.out,
+plot_cAME <- function(came.out,
                       factor_name,
                       main = c("Conditional AMEs"),
                       col, pch, mar,

@@ -10,10 +10,11 @@ Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
 Imports:
+    arm,
     prodlim,
     Hmisc,
+    sandwich,
     igraph,
-    FindIt,
-    arm
+    FindIt
 URL: http://github.com/naoki-egami/PopCon
 BugReports: http://github.com/naoki-egami/PopCon/issues

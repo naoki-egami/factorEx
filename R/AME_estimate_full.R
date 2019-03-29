@@ -38,6 +38,8 @@ AME_estimate_full <- function(formula,
                               boot = 100,
                               seed = 1234){
 
+  cat("Using version-conditional_effect:\n")
+
   if((type %in% c("No-Reg","gash-anova", "genlasso")) == FALSE){
     warning(" 'type' should be one of 'No-Reg', 'gash-anova' and 'genalsso' ")
   }

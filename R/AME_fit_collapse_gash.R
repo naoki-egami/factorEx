@@ -3,6 +3,7 @@
 #' @param data data
 #' @param pair whether we use the paired-conjoint design
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @import arm
 #' @export
 
 collapase.fit <- function(formula,
