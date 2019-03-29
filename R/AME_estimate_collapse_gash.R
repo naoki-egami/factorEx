@@ -93,17 +93,17 @@ AME_estimate_collapse_gash <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   # base
-  tableAME_base <- AME.fit(formula,
-                           data = data, pair = pair,
-                           marginal_dist = marginal_dist,
-                           marginal_dist_u_list = marginal_dist_u_list,
-                           marginal_dist_u_base = marginal_dist_u_base,
-                           marginal_type = marginal_type,
-                           difference = difference)
+  fitAME_base <- AME.fit(formula_full,
+                         data = data, pair = pair,
+                         marginal_dist = marginal_dist,
+                         marginal_dist_u_list = marginal_dist_u_list,
+                         marginal_dist_u_base = marginal_dist_u_base,
+                         marginal_type = marginal_type,
+                         difference = difference)
+
+  tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
-
-
-
+  coefAME_base  <- fitAME_base$coef
 
   # Collapsing
   if(pair == TRUE)  data$pair_id <- pair_id
@@ -116,16 +116,20 @@ AME_estimate_collapse_gash <- function(formula,
                                             data = data,
                                             pair = pair,
                                             cv.collapse.cost = cv.collapse.cost,
+                                            fac.level = fac.level, ord.fac = ord.fac,
                                             marginal_dist = marginal_dist,
                                             marginal_type = marginal_type,
                                             difference = difference,
                                             boot = boot, family = family,
                                             nway = nway,
                                             cv.type = cv.type,
-                                            tableAME_base = tableAME_base)
+                                            tableAME_base = tableAME_base,
+                                            coefAME_base_l = length(coefAME_base))
 
   table_AME <- table_AME_f$fit
   boot_AME  <- table_AME_f$fit.mat
+  boot_coef <- table_AME_f$coef.mat
+  colnames(boot_coef) <- names(coefAME_base)
 
   ## For Each Factor
   AME <- list()
@@ -139,11 +143,13 @@ AME_estimate_collapse_gash <- function(formula,
   input  <- list("formula" = formula, "data" = data,
                  "pair" = pair, "pair_id" = pair_id,
                  "marginal_dist" = marginal_dist,
+                 "marginal_dist_u_list" = marginal_dist_u_list,
+                 "marginal_dist_u_base" = marginal_dist_u_base,
                  "marginal_type" = marginal_type, "difference" = difference)
 
   output <- list("AME" = AME, "baseline" = baseline,
                  "type_all" = type_all, "type_difference" = type_difference,
-                 "boot_AME" = boot_AME,
+                 "boot_AME" = boot_AME, "boot_coef" = boot_coef,
                  "input" = input)
   return(output)
 }

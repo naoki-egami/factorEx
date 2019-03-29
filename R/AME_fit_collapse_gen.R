@@ -112,6 +112,7 @@ fit.after.collapse.gen <- function(formula_full,
   }
   tableAME_new$level_num <- NULL
 
+
   out <- list("tableAME_new" = tableAME_new, "coef" = coefAME_long)
 
   return(out)
