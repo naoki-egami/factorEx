@@ -266,7 +266,7 @@ AME.collapse.crossfit <- function(formula,
                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
                              fac.level = fac.level, ord.fac = ord.fac)
 
-  print(fit_col_1)
+  # print(fit_col_1)
 
   fitAME_1 <- fit.after.collapse(formula_full = formula_full,
                                  newdata = data_test,
@@ -288,7 +288,7 @@ AME.collapse.crossfit <- function(formula,
                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
                              fac.level = fac.level, ord.fac = ord.fac)
 
-  print(fit_col_2)
+  # print(fit_col_2)
 
   # fit_col_2 <- tryCatch({collapase.fit(formula = formula,
   #                                      family = family,
