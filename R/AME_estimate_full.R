@@ -17,8 +17,10 @@
 #' @param seed seed for bootstrap
 #' @importFrom FindIt cv.CausalANOVA CausalANOVA
 #' @importFrom prodlim row.match
-#' @import sandwich
 #' @importFrom igraph graph_from_adjacency_matrix
+#' @importFrom pbmcapply pbmclapply
+#' @importFrom pbapply pblapply
+#' @import parallel
 #' @import arm
 #' @export
 
@@ -36,7 +38,8 @@ AME_estimate_full <- function(formula,
                               cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
                               cv.type = "cv.1Std", nfolds = 5,
                               boot = 100,
-                              seed = 1234){
+                              seed = 1234,
+                              numCores = NULL){
 
   cat("Using version-conditional_effect:\n")
 
@@ -46,6 +49,11 @@ AME_estimate_full <- function(formula,
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
+
+  if(is.null(numCores) == FALSE){
+    if(numCores >= detectCores()) numCores <- detectCores() - 1
+  }
+  if(is.null(numCores)) numCores <- detectCores() - 1
 
   set.seed(seed)
 
@@ -71,7 +79,8 @@ AME_estimate_full <- function(formula,
                                       nway = nway,
                                       cv.collapse.cost = cv.collapse.cost,
                                       cv.type = cv.type,
-                                      boot = boot)
+                                      boot = boot,
+                                      numCores = numCores)
 
   }else if(type == "genlasso"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
@@ -86,7 +95,8 @@ AME_estimate_full <- function(formula,
                                           cv.type = cv.type,
                                           nfolds = nfolds,
                                           boot = boot,
-                                          eps = 0.0001)
+                                          eps = 0.0001,
+                                          numCores = numCores)
   }
   return(out)
 }

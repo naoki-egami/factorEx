@@ -18,7 +18,8 @@ AME_estimate_collapse_gash <- function(formula,
                                        nway = 1,
                                        cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
                                        cv.type = "cv.1Std",
-                                       boot = 100){
+                                       boot = 100,
+                                       numCores){
 
   ###########
   ## Check ##
@@ -72,6 +73,8 @@ AME_estimate_collapse_gash <- function(formula,
   fac.level <- unlist(lapply(model.frame(formula, data=data)[,-1],
                              FUN = function(x) length(levels(x))))
 
+  original_level <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x))
+
   # Check ----------
   marginal_dist_u0 <- marginal_dist[[1]]
   marginal_dist_u <- data.frame(matrix(NA, ncol=0, nrow=nrow(marginal_dist_u0)))
@@ -93,7 +96,7 @@ AME_estimate_collapse_gash <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   # base
-  fitAME_base <- AME.fit(formula_full,
+  fitAME_base <- AME.fit(formula,
                          data = data, pair = pair,
                          marginal_dist = marginal_dist,
                          marginal_dist_u_list = marginal_dist_u_list,
@@ -103,7 +106,7 @@ AME_estimate_collapse_gash <- function(formula,
 
   tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
-  coefAME_base  <- fitAME_base$coef
+  coefAME_base  <- coefMake(original_level)
 
   # Collapsing
   if(pair == TRUE)  data$pair_id <- pair_id
@@ -124,12 +127,13 @@ AME_estimate_collapse_gash <- function(formula,
                                             nway = nway,
                                             cv.type = cv.type,
                                             tableAME_base = tableAME_base,
-                                            coefAME_base_l = length(coefAME_base))
+                                            coefAME_base_l = length(coefAME_base),
+                                            numCores = numCores)
 
   table_AME <- table_AME_f$fit
   boot_AME  <- table_AME_f$fit.mat
   boot_coef <- table_AME_f$coef.mat
-  colnames(boot_coef) <- names(coefAME_base)
+  colnames(boot_coef) <- coefAME_base
 
   ## For Each Factor
   AME <- list()

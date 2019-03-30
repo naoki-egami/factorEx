@@ -3,10 +3,10 @@
 #' @param data data
 #' @param pair whether we use the paired-conjoint design
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
-#' @import arm
+#' @importFrom FindIt cv.CausalANOVA CausalANOVA
 #' @export
 
-collapase.fit <- function(formula,
+collapse.fit <- function(formula,
                           family,
                           data, pair = TRUE,
                           nway = 1, collapse = TRUE, collapse.cost,
@@ -124,6 +124,59 @@ fit.after.collapse <- function(formula_full,
   return(out)
 }
 
+crossGashFitPar <- function(x,
+                        formula,
+                        formula_full,
+                        data,
+                        pair,
+                        nway,
+                        fac.level, ord.fac,
+                        collapse.cost,
+                        marginal_dist,
+                        marginal_type,
+                        difference,
+                        family,
+                        tableAME_base,
+                        original_level,
+                        all_eq){
+
+  seed.b <- 1000*x
+  set.seed(seed.b)
+  boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
+  # create bootstap sample with sapply
+  boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
+  if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
+  }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
+  data_boot <- data[unlist(boot_which),]
+  data_boot$cluster <- new_boot_id
+  data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
+
+  fit <- AME.collapse.crossfit(formula = formula,
+                               formula_full = formula_full,
+                               data = data_boot,
+                               pair = pair,
+                               nway = nway,
+                               fac.level = fac.level, ord.fac = ord.fac,
+                               collapse.cost = collapse.cost,
+                               marginal_dist = marginal_dist,
+                               marginal_type = marginal_type,
+                               difference = difference,
+                               family = family,
+                               tableAME_base = tableAME_base,
+                               original_level = original_level)
+
+  return(fit)
+}
+
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @importFrom FindIt cv.CausalANOVA CausalANOVA
+#' @import arm
+#' @export
 
 AME.collapse.crossfit.boot <- function(formula,
                                        data,
@@ -138,7 +191,8 @@ AME.collapse.crossfit.boot <- function(formula,
                                        difference = FALSE,
                                        boot = 100,
                                        tableAME_base,
-                                       coefAME_base_l){
+                                       coefAME_base_l,
+                                       numCores){
 
 
 
@@ -168,48 +222,133 @@ AME.collapse.crossfit.boot <- function(formula,
 
   original_level <- lapply(model.frame(formula, data = data)[,-1], levels)
 
-  cat("\nBootstrap:")
+  cat("\nBootstrap:\n")
   fit.mat <- c()
   coef.mat <- matrix(NA, nrow = boot, ncol = coefAME_base_l)
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
 
-  for(b in 1:boot){
+  if(Sys.info()[['sysname']] == 'Windows') {
 
-    # seed.b <- seed + 1000*b
-    # set.seed(seed.b)
-    boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
-    # create bootstap sample with sapply
-    boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
-    if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
-    }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
-    data_boot <- data[unlist(boot_which),]
-    data_boot$cluster <- new_boot_id
-    data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
+    if (numCores == 1){
+      fit_boot <- pblapply(1:boot, function(x) crossGashFitPar(x,
+                                                               formula = formula,
+                                                               formula_full = formula_full,
+                                                               data = data,
+                                                               pair = pair,
+                                                               nway = nway,
+                                                               fac.level = fac.level, ord.fac = ord.fac,
+                                                               collapse.cost = collapse.cost,
+                                                               marginal_dist = marginal_dist,
+                                                               marginal_type = marginal_type,
+                                                               difference = difference,
+                                                               family = family,
+                                                               tableAME_base = tableAME_base,
+                                                               original_level = original_level,
+                                                               all_eq = all_eq))
+    }else {
 
-    fitC <- AME.collapse.crossfit(formula = formula,
-                                  formula_full = formula_full,
-                                  data = data_boot,
-                                  pair = pair,
-                                  nway = nway,
-                                  fac.level = fac.level, ord.fac = ord.fac,
-                                  collapse.cost = collapse.cost,
-                                  marginal_dist = marginal_dist,
-                                  marginal_type = marginal_type,
-                                  difference = difference,
-                                  family = family,
-                                  tableAME_base = tableAME_base,
-                                  original_level = original_level)
+      cl <- makeCluster(numCores)
+      registerDoSNOW(cl)
+      pb <- txtProgressBar(max = boot, style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      #
+      #     cl <- makeCluster(numCores)
+      #     registerDoParallel(cl)
+      #     on.exit(stopCluster(cl))
 
-    # Store coefficients
-    coef.mat[b, 1:coefAME_base_l] <- fitC$coef
-    fit <- fitC$tableAME_full
+      fit_boot <- foreach(i = 1:boot,
+                          .export = c("prepare_data"),
+                          .packages = c("FindIt", "prodlim"),
+                          .options.snow = opts) %dopar% {
+                            crossGashFitPar(i,
+                                            formula = formula,
+                                            formula_full = formula_full,
+                                            data = data,
+                                            pair = pair,
+                                            nway = nway,
+                                            fac.level = fac.level, ord.fac = ord.fac,
+                                            collapse.cost = collapse.cost,
+                                            marginal_dist = marginal_dist,
+                                            marginal_type = marginal_type,
+                                            difference = difference,
+                                            family = family,
+                                            tableAME_base = tableAME_base,
+                                            original_level = original_level,
+                                            all_eq = all_eq)
+                          }
+      close(pb)
+      stopCluster(cl)
+    }
 
-    if(b == 1) fit_0 <- fit
-    if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
-    fit.mat <- cbind(fit.mat, fit[,4])
+  }else{
 
-    if(b%%10 == 0) cat(paste(b, "..", sep=""))
+    # -----
+    # Mac
+    # -----
+
+  fit_boot <- pbmclapply(seq(1:boot), function(x) crossGashFitPar(x,
+                                                                formula = formula,
+                                                                formula_full = formula_full,
+                                                                data = data,
+                                                                pair = pair,
+                                                                nway = nway,
+                                                                fac.level = fac.level, ord.fac = ord.fac,
+                                                                collapse.cost = collapse.cost,
+                                                                marginal_dist = marginal_dist,
+                                                                marginal_type = marginal_type,
+                                                                difference = difference,
+                                                                family = family,
+                                                                tableAME_base = tableAME_base,
+                                                                original_level = original_level,
+                                                                all_eq = all_eq),
+                       mc.cores = numCores)
   }
+
+  for(b in 1:boot){
+    coef.mat[b, 1:coefAME_base_l] <- fit_boot[[b]]$coef
+    fit.mat <- cbind(fit.mat, fit_boot[[b]]$tableAME_full[,4])
+  }
+
+  # for(b in 1:boot){
+  #
+  #   # seed.b <- seed + 1000*b
+  #   # set.seed(seed.b)
+  #   boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
+  #   # create bootstap sample with sapply
+  #   boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
+  #   if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
+  #   }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
+  #   data_boot <- data[unlist(boot_which),]
+  #   data_boot$cluster <- new_boot_id
+  #   data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
+  #
+  #   fitC <- AME.collapse.crossfit(formula = formula,
+  #                                 formula_full = formula_full,
+  #                                 data = data_boot,
+  #                                 pair = pair,
+  #                                 nway = nway,
+  #                                 fac.level = fac.level, ord.fac = ord.fac,
+  #                                 collapse.cost = collapse.cost,
+  #                                 marginal_dist = marginal_dist,
+  #                                 marginal_type = marginal_type,
+  #                                 difference = difference,
+  #                                 family = family,
+  #                                 tableAME_base = tableAME_base,
+  #                                 original_level = original_level)
+  #
+  #   # Store coefficients
+  #   coef.mat[b, 1:coefAME_base_l] <- fitC$coef
+  #   fit <- fitC$tableAME_full
+  #
+  #   if(b == 1) fit_0 <- fit
+  #   if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
+  #   fit.mat <- cbind(fit.mat, fit[,4])
+  #
+  #   if(b%%10 == 0) cat(paste(b, "..", sep=""))
+  # }
+
+  fit <- fit_boot[[1]]$tableAME_full
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
 
@@ -247,26 +386,22 @@ AME.collapse.crossfit <- function(formula,
   data_test  <- data[test_which, ]
 
   # Fit 1
-  # fit_col_1 <- tryCatch({collapase.fit(formula = formula,
-  #                                      family = family,
-  #                                      data = data_train, pair = pair,
-  #                                      nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-  #                                      ord.fac = ord.fac)
-  # }, error=function(e){
-  #   cat(paste("warning: no collapsing"))
-  #   dat_sub <- model.frame(formula, data = data_train)
-  #   fit_col_1 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
-  #   rm(dat_sub)
-  #   return(fit_col_1)
-  # })
-
-  fit_col_1 <- collapase.fit(formula = formula,
-                             family = family,
-                             data = data_train, pair = pair,
-                             nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-                             fac.level = fac.level, ord.fac = ord.fac)
-
-  print(fit_col_1)
+  fit_col_1 <- tryCatch({collapse.fit(formula = formula,
+                                       family = family,
+                                       data = data_train, pair = pair,
+                                       nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+                                       fac.level = fac.level, ord.fac = ord.fac)
+  }, error=function(e){
+    cat(paste("warning: no collapsing"))
+    fit_col_1 <- lapply(original_level, function(x) seq(1:length(x)))
+    return(fit_col_1)
+  })
+#
+#   fit_col_1 <- collapse.fit(formula = formula,
+#                              family = family,
+#                              data = data_train, pair = pair,
+#                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+#                              fac.level = fac.level, ord.fac = ord.fac)
 
   fitAME_1 <- fit.after.collapse(formula_full = formula_full,
                                  newdata = data_test,
@@ -282,26 +417,22 @@ AME.collapse.crossfit <- function(formula,
   coefAME_1  <- fitAME_1$coef
 
   # Fit 2
-  fit_col_2 <- collapase.fit(formula = formula,
-                             family = family,
-                             data = data_test, pair = pair,
-                             nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-                             fac.level = fac.level, ord.fac = ord.fac)
+  # fit_col_2 <- collapse.fit(formula = formula,
+  #                            family = family,
+  #                            data = data_test, pair = pair,
+  #                            nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+  #                            fac.level = fac.level, ord.fac = ord.fac)
 
-  print(fit_col_2)
-
-  # fit_col_2 <- tryCatch({collapase.fit(formula = formula,
-  #                                      family = family,
-  #                                      data = data_test, pair = pair,
-  #                                      nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-  #                                      ord.fac = ord.fac)
-  # }, error=function(e){
-  #   cat(paste("warning: no collapsing"))
-  #   dat_sub <- model.frame(formula, data = data_test)
-  #   fit_col_2 <- lapply(dat_sub[,-1], function(x) seq(1:length(levels(x))))
-  #   rm(dat_sub)
-  #   return(fit_col_2)
-  # })
+  fit_col_2 <- tryCatch({collapse.fit(formula = formula,
+                                       family = family,
+                                       data = data_test, pair = pair,
+                                       nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+                                       fac.level = fac.level, ord.fac = ord.fac)
+  }, error=function(e){
+    cat(paste("warning: no collapsing"))
+    fit_col_2 <- lapply(original_level, function(x) seq(1:length(x)))
+    return(fit_col_2)
+  })
 
   fitAME_2 <- fit.after.collapse(formula_full = formula_full,
                                  newdata = data_train,

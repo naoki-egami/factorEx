@@ -1,4 +1,4 @@
-collapase.fit.gen <- function(formula,
+collapse.fit.gen <- function(formula,
                               data, pair = TRUE,
                               lambda,
                               fac.level, ord.fac,
@@ -118,6 +118,48 @@ fit.after.collapse.gen <- function(formula_full,
   return(out)
 }
 
+crossFitPar <- function(x,
+                        formula,
+                        formula_full,
+                        data,
+                        pair,
+                        fac.level, ord.fac,
+                        lambda,
+                        marginal_dist,
+                        marginal_type,
+                        difference,
+                        tableAME_base,
+                        eps,
+                        beta_weight,
+                        all_eq){
+
+  seed.b <- 1000*x
+  set.seed(seed.b)
+  boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
+  # create bootstap sample with sapply
+  boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
+  if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
+  }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
+  data_boot <- data[unlist(boot_which),]
+  data_boot$cluster <- new_boot_id
+  data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
+
+  fit <- AME.collapse.gen.crossfit(formula = formula,
+                                   formula_full = formula_full,
+                                   data = data_boot,
+                                   pair = pair,
+                                   fac.level = fac.level, ord.fac = ord.fac,
+                                   lambda = lambda,
+                                   marginal_dist = marginal_dist,
+                                   marginal_type = marginal_type,
+                                   difference = difference,
+                                   tableAME_base = tableAME_base,
+                                   eps = eps,
+                                   beta_weight = beta_weight)
+  return(fit)
+}
+
+
 
 AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 data,
@@ -131,7 +173,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 boot = 100,
                                                 tableAME_base,
                                                 coefAME_base_l,
-                                                eps = 0.0001){
+                                                eps = 0.0001,
+                                                numCores){
 
 
 
@@ -170,47 +213,135 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   # }
   data <- data[order(data$cluster), ]
 
-  cat("\nBootstrap: ")
+  cat("\nBootstrap:\n")
   fit.mat  <- c()
   coef.mat <- matrix(NA, nrow = boot, ncol = coefAME_base_l)
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
-  for(b in 1:boot){
 
-    # seed.b <- seed + 1000*b
-    # set.seed(seed.b)
-    boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
-    # create bootstap sample with sapply
-    boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
-    if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
-    }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
-    data_boot <- data[unlist(boot_which),]
-    data_boot$cluster <- new_boot_id
-    data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
 
-    fitC <- AME.collapse.gen.crossfit(formula = formula,
-                                     formula_full = formula_full,
-                                     data = data_boot,
-                                     pair = pair,
-                                     fac.level = fac.level, ord.fac = ord.fac,
-                                     lambda = lambda,
-                                     marginal_dist = marginal_dist,
-                                     marginal_type = marginal_type,
-                                     difference = difference,
-                                     tableAME_base = tableAME_base,
-                                     eps = eps,
-                                     beta_weight = beta_weight)
+  if(Sys.info()[['sysname']] == 'Windows') {
 
-    # Store coefficients
-    coef.mat[b, 1:coefAME_base_l] <- fitC$coef
-    fit <- fitC$tableAME_full
+    # ------------
+    # Windows
+    # ------------
 
-    if(b == 1) fit_0 <- fit
-    if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
-    fit.mat <- cbind(fit.mat, fit[,4])
+    if (numCores == 1){
+      fit_boot <- pblapply(1:boot, function(x)
+        crossFitPar(x,
+                    formula = formula,
+                    formula_full = formula_full,
+                    data = data,
+                    pair = pair,
+                    fac.level = fac.level, ord.fac = ord.fac,
+                    lambda = lambda,
+                    marginal_dist = marginal_dist,
+                    marginal_type = marginal_type,
+                    difference = difference,
+                    tableAME_base = tableAME_base,
+                    eps = eps,
+                    beta_weight = beta_weight,
+                    all_eq = all_eq))
+    }else {
 
-    if(b < 10) cat(paste(b, "..", sep=""))
-    if(b%%10 == 0) cat(paste(b, "...", sep=""))
+      cl <- makeCluster(numCores)
+      registerDoSNOW(cl)
+      pb <- txtProgressBar(max = boot, style = 3)
+      progress <- function(n) setTxtProgressBar(pb, n)
+      opts <- list(progress = progress)
+      #
+      #     cl <- makeCluster(numCores)
+      #     registerDoParallel(cl)
+      #     on.exit(stopCluster(cl))
+
+      fit_boot <- foreach(i = 1:boot,
+                          .export = c("prepare_data"),
+                          .packages = c("genlasso", "prodlim"),
+                          .options.snow = opts) %dopar% {
+                            crossFitPar(i,
+                                        formula = formula,
+                                        formula_full = formula_full,
+                                        data = data,
+                                        pair = pair,
+                                        fac.level = fac.level, ord.fac = ord.fac,
+                                        lambda = lambda,
+                                        marginal_dist = marginal_dist,
+                                        marginal_type = marginal_type,
+                                        difference = difference,
+                                        tableAME_base = tableAME_base,
+                                        eps = eps,
+                                        beta_weight = beta_weight,
+                                        all_eq = all_eq)
+                          }
+      close(pb)
+      stopCluster(cl)
+    }
+  }else{
+
+    # ------------
+    # Mac
+    # ------------
+    fit_boot <- pbmclapply(seq(1:boot), function(x) crossFitPar(x,
+                                                                formula = formula,
+                                                                formula_full = formula_full,
+                                                                data = data,
+                                                                pair = pair,
+                                                                fac.level = fac.level, ord.fac = ord.fac,
+                                                                lambda = lambda,
+                                                                marginal_dist = marginal_dist,
+                                                                marginal_type = marginal_type,
+                                                                difference = difference,
+                                                                tableAME_base = tableAME_base,
+                                                                eps = eps,
+                                                                beta_weight = beta_weight,
+                                                                all_eq = all_eq),
+                           mc.cores = numCores)
   }
+
+
+  for(b in 1:boot){
+    coef.mat[b, 1:coefAME_base_l] <- fit_boot[[b]]$coef
+    fit.mat <- cbind(fit.mat, fit_boot[[b]]$tableAME_full[,4])
+  }
+  fit <- fit_boot[[1]]$tableAME_full
+
+  # for(b in 1:boot){
+  #
+  #   # seed.b <- seed + 1000*b
+  #   # set.seed(seed.b)
+  #   boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
+  #   # create bootstap sample with sapply
+  #   boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
+  #   if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
+  #   }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
+  #   data_boot <- data[unlist(boot_which),]
+  #   data_boot$cluster <- new_boot_id
+  #   data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
+  #
+  #   fitC <- AME.collapse.gen.crossfit(formula = formula,
+  #                                    formula_full = formula_full,
+  #                                    data = data_boot,
+  #                                    pair = pair,
+  #                                    fac.level = fac.level, ord.fac = ord.fac,
+  #                                    lambda = lambda,
+  #                                    marginal_dist = marginal_dist,
+  #                                    marginal_type = marginal_type,
+  #                                    difference = difference,
+  #                                    tableAME_base = tableAME_base,
+  #                                    eps = eps,
+  #                                    beta_weight = beta_weight)
+  #
+  #   # Store coefficients
+  #   coef.mat[b, 1:coefAME_base_l] <- fitC$coef
+  #   fit <- fitC$tableAME_full
+  #
+  #   if(b == 1) fit_0 <- fit
+  #   if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
+  #   fit.mat <- cbind(fit.mat, fit[,4])
+  #
+  #   if(b < 10) cat(paste(b, "..", sep=""))
+  #   if(b%%10 == 0) cat(paste(b, "...", sep=""))
+  # }
+
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
   low.ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
@@ -251,7 +382,7 @@ AME.collapse.gen.crossfit <- function(formula,
   data_test  <- data[test_which, ]
 
   # Fit 1
-  fit_col_1 <- collapase.fit.gen(formula = formula,
+  fit_col_1 <- collapse.fit.gen(formula = formula,
                                  data = data_train, pair = pair,
                                  lambda = lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,
@@ -271,7 +402,7 @@ AME.collapse.gen.crossfit <- function(formula,
   coefAME_1  <- fitAME_1$coef
 
   # Fit 2
-  fit_col_2 <- collapase.fit.gen(formula = formula,
+  fit_col_2 <- collapse.fit.gen(formula = formula,
                                  data = data_test, pair = pair,
                                  lambda = lambda,
                                  fac.level = fac.level, ord.fac = ord.fac,

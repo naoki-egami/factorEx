@@ -8,7 +8,7 @@ AME_estimate_collapse_gash(formula, data, ord.fac, pair = FALSE,
   pair_id = NULL, cluster = NULL, marginal_dist, marginal_type,
   difference = FALSE, family = "binomial", nway = 1,
   cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7), cv.type = "cv.1Std",
-  boot = 100)
+  boot = 100, numCores)
 }
 \arguments{
 \item{formula}{formula}

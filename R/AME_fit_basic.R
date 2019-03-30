@@ -3,6 +3,7 @@
 #' @param data data
 #' @param pair whether we use the paired-conjoint design
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @importFrom sandwich sandwich estfun
 #' @export
 
 AME.fit <- function(formula_full,
@@ -506,14 +507,21 @@ plot_cAME <- function(came.out,
                       plot_difference = "add",
                       cex = 1){
 
+  type_all <- came.out$type_all
+  type_difference <- came.out$type_difference
+
   if(all(is.element(factor_name, names(came.out$cAME))) == FALSE){
     stop(" 'factor_name' can only take a subset of factors estimated in 'cAME.estimate'")
   }
   if(missing(col)){
-    col <- rep("black",length(unique(came.out$cAME[[1]]$type)))
+    if(plot_difference == "add")  col <- rep("black", length(type_all))
+    if(plot_difference == "no")   col <- rep("black", length(type_all) - length(type_difference))
+    if(plot_difference == "only") col <- rep("black", length(type_difference))
   }
   if(missing(pch)){
-    pch <- rep(19,length(unique(came.out$cAME[[1]]$type)))
+    if(plot_difference == "add")  pch <- rep(19, length(type_all))
+    if(plot_difference == "no")   pch <- rep(19, length(type_all) - length(type_difference))
+    if(plot_difference == "only") pch <- rep(19, length(type_difference))
   }
   if(missing(mar)){
     mar <- 6
@@ -677,6 +685,34 @@ plot_cAME <- function(came.out,
   #                                                 p_type_prop, col= col, pch = pch)
   # }
 
+}
+
+coefMake <- function(original_level){
+  # Expand Coefficients
+  n_fac <- length(original_level)
+  original_name <- list()
+
+  # For main effects
+  main_name <- ""
+  for(z in 1:length(original_level)){
+    original_name[[z]]  <- paste(names(original_level)[z], original_level[[z]], sep = "")
+    main_name <- c(main_name, original_name[[z]][-1])
+  }
+
+  # For Interaction effects
+  combMat <- combn(n_fac, 2)
+  int_name <- c()
+  for(z in 1:ncol(combMat)){
+    L1 <- original_name[[combMat[1,z]]]
+    L2 <- original_name[[combMat[2,z]]]
+    c_1 <- seq(from = 2, to = length(L1))
+    c_2 <- seq(from = 2, to = length(L2))
+    int0 <- paste(L1[rep(c_1, times = length(c_2))],
+                  L2[rep(c_2, each = length(c_1))], sep = ":")
+    int_name <- c(int_name, int0)
+  }
+  coef_name <- c(main_name, int_name)
+  return(coef_name)
 }
 
 

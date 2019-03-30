@@ -15,6 +15,8 @@ Imports:
     Hmisc,
     sandwich,
     igraph,
-    FindIt
+    FindIt,
+    pbmcapply,
+    doSNOW
 URL: http://github.com/naoki-egami/PopCon
 BugReports: http://github.com/naoki-egami/PopCon/issues
