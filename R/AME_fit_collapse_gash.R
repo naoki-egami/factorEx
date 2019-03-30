@@ -387,21 +387,15 @@ AME.collapse.crossfit <- function(formula,
 
   # Fit 1
   fit_col_1 <- tryCatch({collapse.fit(formula = formula,
-                                       family = family,
-                                       data = data_train, pair = pair,
-                                       nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-                                       fac.level = fac.level, ord.fac = ord.fac)
+                                      family = family,
+                                      data = data_train, pair = pair,
+                                      nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+                                      fac.level = fac.level, ord.fac = ord.fac)
   }, error=function(e){
     cat(paste("warning: no collapsing"))
     fit_col_1 <- lapply(original_level, function(x) seq(1:length(x)))
     return(fit_col_1)
   })
-#
-#   fit_col_1 <- collapse.fit(formula = formula,
-#                              family = family,
-#                              data = data_train, pair = pair,
-#                              nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-#                              fac.level = fac.level, ord.fac = ord.fac)
 
   fitAME_1 <- fit.after.collapse(formula_full = formula_full,
                                  newdata = data_test,
@@ -417,17 +411,11 @@ AME.collapse.crossfit <- function(formula,
   coefAME_1  <- fitAME_1$coef
 
   # Fit 2
-  # fit_col_2 <- collapse.fit(formula = formula,
-  #                            family = family,
-  #                            data = data_test, pair = pair,
-  #                            nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-  #                            fac.level = fac.level, ord.fac = ord.fac)
-
   fit_col_2 <- tryCatch({collapse.fit(formula = formula,
-                                       family = family,
-                                       data = data_test, pair = pair,
-                                       nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
-                                       fac.level = fac.level, ord.fac = ord.fac)
+                                      family = family,
+                                      data = data_test, pair = pair,
+                                      nway = nway, collapse = TRUE, collapse.cost = collapse.cost,
+                                      fac.level = fac.level, ord.fac = ord.fac)
   }, error=function(e){
     cat(paste("warning: no collapsing"))
     fit_col_2 <- lapply(original_level, function(x) seq(1:length(x)))
