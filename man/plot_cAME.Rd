@@ -6,7 +6,7 @@
 \usage{
 plot_cAME(came.out, factor_name, main = c("Conditional AMEs"), col, pch,
   mar, legend_pos = "topright", plot_all = TRUE,
-  plot_difference = "add", cex = 1)
+  plot_difference = "add", marginal_prop, marginal_effect, cex = 1)
 }
 \arguments{
 \item{formula}{formula}

@@ -501,10 +501,12 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
 plot_cAME <- function(came.out,
                       factor_name,
                       main = c("Conditional AMEs"),
-                      col, pch, mar,
+                      col,
+                      pch, mar,
                       legend_pos = "topright",
                       plot_all = TRUE,
                       plot_difference = "add",
+                      marginal_prop, marginal_effect,
                       cex = 1){
 
   type_all <- came.out$type_all
@@ -530,11 +532,22 @@ plot_cAME <- function(came.out,
     stop(" 'cAME.estiamte' should take `difference = TRUE` to plot their estimates")
   }
 
-  type_difference <- came.out$type_difference
+  ## type_plot
+  if(plot_difference == "add")  type_plot <- type_all
+  if(plot_difference == "no")   type_plot <- setdiff(type_all, type_difference)
+  if(plot_difference == "only") type_plot <- type_difference
+
+  if(missing(marginal_prop))   marginal_prop <- type_plot
+  if(missing(marginal_effect)) marginal_effect <- type_plot
+
+  ## col_plot
+  col_prop <- col_effect <- col
+  col_prop[is.element(type_plot, marginal_prop) == FALSE] <- NA
+  col_effect[is.element(type_plot, marginal_effect) == FALSE] <- NA
 
   ## Correct all esimates ----------
   p_coef_full <- p_high_full <- p_low_full <- c()
-  p_name_full <- p_name_f_full <- p_col_full <- p_cProp_full <- p_pch_full <- c()
+  p_name_full <- p_name_f_full <- p_col_full_effect <- p_col_full_prop <- p_cProp_full <- p_pch_full <- c()
   for(g in 1:length(factor_name)){
     p_cAME  <- came.out$cAME[[factor_name[g]]]
 
@@ -551,7 +564,8 @@ plot_cAME <- function(came.out,
     p_name_b[p_cAME$type != p_cAME$type[1]] <- ""
     p_name_f <- c(p_name_t, rep("", length(p_name_b)))
     p_name   <- c("", p_name_b)
-    p_col  <- c(NA, rep(col, length(unique(p_cAME$level))))
+    p_col_prop  <- c(NA, rep(col_prop, length(unique(p_cAME$level))))
+    p_col_effect  <- c(NA, rep(col_effect, length(unique(p_cAME$level))))
     p_pch  <- c(NA, rep(pch, length(unique(p_cAME$level))))
 
     ## Store values
@@ -560,7 +574,8 @@ plot_cAME <- function(came.out,
     p_low_full  <- c(p_low_full, p_low)
     p_name_f_full <- c(p_name_f_full, p_name_f)
     p_name_full <- c(p_name_full, p_name)
-    p_col_full  <- c(p_col_full, p_col)
+    p_col_full_prop  <- c(p_col_full_prop, p_col_prop)
+    p_col_full_effect  <- c(p_col_full_effect, p_col_effect)
     p_pch_full  <- c(p_pch_full, p_pch)
 
     ## Store Distributions
@@ -581,7 +596,7 @@ plot_cAME <- function(came.out,
   # p_low_full <- c(NA, AME.low, p_low_full)
   p_name_f_full_prop <- p_name_f_full
   p_name_full_prop <- p_name_full
-  p_col_full_prop <- p_col_full
+  # p_col_full_prop <- p_col_prop_full
   p_pch_full_prop  <- p_pch_full
   # p_name_f_AME <- c(rep("", length(came.out$AME$estimate)))
   # p_name_AME <- unique(came.out$AME$type)
@@ -617,20 +632,6 @@ plot_cAME <- function(came.out,
 
   }else if(plot_all == TRUE){
     par(mfrow=c(1,2), oma = c(1, mar,1,1), mar=c(4,2,4,1))
-    plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
-         yaxt="n", ylab = "", main = main[1], xlim = p_x,
-         xlab = "Estimated Effects", col = rev(p_col_full))
-    segments(rev(p_low_full), seq(1:length(p_coef_full)),
-             rev(p_high_full), seq(1:length(p_coef_full)),
-             col = rev(p_col_full))
-    Axis(side=2, at = seq(1:length(p_name_full)),
-         labels=rev(p_name_full), las=1, font = 1, tick=F, cex.axis = cex)
-    Axis(side=2, at = seq(1:length(p_name_f_full)),
-         labels=rev(p_name_f_full), las=1, font = 2, tick=F, cex.axis = cex)
-    abline(v=0, lty=2)
-    if(is.character(legend_pos[1])==TRUE) legend(legend_pos, p_type, col= col, pch = pch)
-    if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
-                                                  p_type, col= col, pch = pch)
     ## Plot ----------
     plot(rev(p_cProp_full), seq(1:length(p_cProp_full)), pch=rev(p_pch_full_prop),
          yaxt="n", ylab = "", main = main[2], xlim = p_x_prop,
@@ -639,9 +640,24 @@ plot_cAME <- function(came.out,
              0, seq(1:length(p_cProp_full)),
              col = rev(p_col_full_prop))
     abline(v=0, lty=2)
+    Axis(side=2, at = seq(1:length(p_name_full)),
+         labels=rev(p_name_full), las=1, font = 1, tick=F, cex.axis = cex)
+    Axis(side=2, at = seq(1:length(p_name_f_full)),
+         labels=rev(p_name_f_full), las=1, font = 2, tick=F, cex.axis = cex)
     if(is.character(legend_pos[1])==TRUE) legend(legend_pos, p_type_prop, col= col, pch = pch)
     if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
                                                   p_type_prop, col= col, pch = pch)
+
+    plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
+         yaxt="n", ylab = "", main = main[1], xlim = p_x,
+         xlab = "Estimated Effects", col = rev(p_col_full_effect))
+    segments(rev(p_low_full), seq(1:length(p_coef_full)),
+             rev(p_high_full), seq(1:length(p_coef_full)),
+             col = rev(p_col_full_effect))
+    abline(v=0, lty=2)
+    if(is.character(legend_pos[1])==TRUE) legend(legend_pos, p_type, col= col, pch = pch)
+    if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                  p_type, col= col, pch = pch)
   }
   # {
   #   p_x_AME <- c(min(AME_low, na.rm=TRUE), max(AME_high, na.rm = TRUE))
