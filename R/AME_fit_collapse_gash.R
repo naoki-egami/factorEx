@@ -79,7 +79,9 @@ fit.after.collapse <- function(formula_full,
   coefAME_main <- coefAME[1]
   for(z in 1:n_fac){
     coefAME_sub  <- coefAME[ind_b == z]
-    coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1])
+    collapse_level_b <- collapse_level[[z]][-1]
+    coefAME_m0 <- c(0, coefAME_sub)[collapse_level_b]
+    ## coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1]) (only for oredered collapsing)
     coefAME_main <- c(coefAME_main, coefAME_m0)
   }
   # For Interaction effects
@@ -138,9 +140,10 @@ crossGashFitPar <- function(x,
                         family,
                         tableAME_base,
                         original_level,
-                        all_eq){
+                        all_eq,
+                        seed){
 
-  seed.b <- 1000*x
+  seed.b <- 1000*x + seed
   set.seed(seed.b)
   boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
   # create bootstap sample with sapply
@@ -163,7 +166,8 @@ crossGashFitPar <- function(x,
                                difference = difference,
                                family = family,
                                tableAME_base = tableAME_base,
-                               original_level = original_level)
+                               original_level = original_level,
+                               seed = seed.b)
 
   return(fit)
 }
@@ -192,7 +196,8 @@ AME.collapse.crossfit.boot <- function(formula,
                                        boot = 100,
                                        tableAME_base,
                                        coefAME_base_l,
-                                       numCores){
+                                       numCores,
+                                       seed){
 
 
 
@@ -211,7 +216,8 @@ AME.collapse.crossfit.boot <- function(formula,
                            ord.fac = ord.fac,
                            family = family,
                            cv.collapse.cost = cv.collapse.cost,
-                           nway = nway, verbose = FALSE)
+                           nway = nway, verbose = FALSE,
+                           seed = seed)
 
   if(cv.type == "cv.1Std") collapse.cost <- cv.fit$cv.1Std
   if(cv.type == "cv.min")  collapse.cost <- cv.fit$cv.min
@@ -244,7 +250,8 @@ AME.collapse.crossfit.boot <- function(formula,
                                                                family = family,
                                                                tableAME_base = tableAME_base,
                                                                original_level = original_level,
-                                                               all_eq = all_eq))
+                                                               all_eq = all_eq,
+                                                               seed = seed))
     }else {
 
       cl <- makeCluster(numCores)
@@ -275,7 +282,8 @@ AME.collapse.crossfit.boot <- function(formula,
                                             family = family,
                                             tableAME_base = tableAME_base,
                                             original_level = original_level,
-                                            all_eq = all_eq)
+                                            all_eq = all_eq,
+                                            seed = seed)
                           }
       close(pb)
       stopCluster(cl)
@@ -301,7 +309,8 @@ AME.collapse.crossfit.boot <- function(formula,
                                                                 family = family,
                                                                 tableAME_base = tableAME_base,
                                                                 original_level = original_level,
-                                                                all_eq = all_eq),
+                                                                all_eq = all_eq,
+                                                                seed = seed),
                        mc.cores = numCores)
   }
 
@@ -309,6 +318,7 @@ AME.collapse.crossfit.boot <- function(formula,
     coef.mat[b, 1:coefAME_base_l] <- fit_boot[[b]]$coef
     fit.mat <- cbind(fit.mat, fit_boot[[b]]$tableAME_full[,4])
   }
+
 
   # for(b in 1:boot){
   #
@@ -351,9 +361,13 @@ AME.collapse.crossfit.boot <- function(formula,
   fit <- fit_boot[[1]]$tableAME_full
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
+  low.95ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
+  high.95ci <- apply(fit.mat, 1, function(x) quantile(x, 0.975))
 
   fit[,4] <- estimate
   fit$se <- se
+  fit$low.95ci <- low.95ci
+  fit$high.95ci <- high.95ci
 
   out <- list("fit" = fit, "fit.mat" = fit.mat, "coef.mat" = coef.mat)
   return(out)
@@ -371,8 +385,10 @@ AME.collapse.crossfit <- function(formula,
                                   difference = FALSE,
                                   family,
                                   tableAME_base,
-                                  original_level){
+                                  original_level,
+                                  seed){
 
+  set.seed(seed)
   # training
   data <- data[order(data$cluster), ]
 

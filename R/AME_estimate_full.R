@@ -55,7 +55,35 @@ AME_estimate_full <- function(formula,
   }
   if(is.null(numCores)) numCores <- detectCores() - 1
 
-  set.seed(seed)
+  ## Check Baselines
+  factor_l <- length(all.vars(formula)[-1])
+  combMat <- combn(factor_l,2); intNames <- c()
+  for(k in 1:ncol(combMat)){
+    intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
+  }
+  formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
+
+  check_levels <- model.matrixBayes(formula_full, data = data)
+  original_level <- lapply(model.frame(formula, data = data)[,-1], FUN = function(x) levels(x))
+  mar_length <- length(unlist(original_level))
+  rest_name <- colnames(check_levels)[(1 + mar_length):ncol(check_levels)][apply(check_levels[, (1 + mar_length):ncol(check_levels)],
+                                                                    2, function(x) mean(x)) == 0]
+
+  rest_level <- unlist(strsplit(rest_name, ":"))
+  baseline <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[1])
+  basenames <- paste(all.vars(formula)[-1], unlist(baseline), sep = "")
+  rest_base <- basenames[is.element(basenames, rest_level)]
+  rest_fac  <- all.vars(formula)[-1][is.element(basenames, rest_level)]
+  if(any(is.element(basenames, rest_level))){
+      wa1 <- paste("The following ", length(rest_name), " pairs have no observation:", sep = "")
+      wa2 <- paste(paste(paste(" (", seq(1:length(rest_name)), ") ", sep = ""), rest_name, sep = ""), collapse = ", ")
+      wa3 <- "To incorporate the restriction, for each factor, select a baseline category that has no restriction."
+      wa4 <- paste("Currently, ", length(rest_base), " baselines (",
+                   paste(rest_base, collapse = ","), ") have restrictions.", sep = "")
+      wa5 <- paste("Change baselines for ", paste(rest_fac, collapse = " and "), " using relevel().", sep = "")
+      stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
+  }
+
 
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
@@ -80,7 +108,8 @@ AME_estimate_full <- function(formula,
                                       cv.collapse.cost = cv.collapse.cost,
                                       cv.type = cv.type,
                                       boot = boot,
-                                      numCores = numCores)
+                                      numCores = numCores,
+                                      seed = seed)
 
   }else if(type == "genlasso"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
@@ -96,7 +125,8 @@ AME_estimate_full <- function(formula,
                                           nfolds = nfolds,
                                           boot = boot,
                                           eps = 0.0001,
-                                          numCores = numCores)
+                                          numCores = numCores,
+                                          seed = seed)
   }
   return(out)
 }

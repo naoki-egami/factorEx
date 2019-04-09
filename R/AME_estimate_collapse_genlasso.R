@@ -20,7 +20,8 @@ AME_estimate_collapse_genlasso <- function(formula,
                                            nfolds = 2,
                                            boot = 100,
                                            eps = 0.0001,
-                                           numCores){
+                                           numCores,
+                                           seed){
 
   ###########
   ## Check ##
@@ -129,7 +130,8 @@ AME_estimate_collapse_genlasso <- function(formula,
                                                      tableAME_base = tableAME_base,
                                                      coefAME_base_l = length(coefAME_base),
                                                      eps = eps,
-                                                     numCores = numCores)
+                                                     numCores = numCores,
+                                                     seed = seed)
 
   table_AME <- table_AME_f$fit
   boot_AME  <- table_AME_f$fit.mat

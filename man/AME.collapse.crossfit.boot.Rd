@@ -8,7 +8,7 @@ AME.collapse.crossfit.boot(formula, data, pair = FALSE, fac.level,
   ord.fac, nway = 1, cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
   cv.type = "cv.1Std", marginal_dist, marginal_type, family,
   difference = FALSE, boot = 100, tableAME_base, coefAME_base_l,
-  numCores)
+  numCores, seed)
 }
 \arguments{
 \item{formula}{formula}

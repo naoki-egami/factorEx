@@ -72,7 +72,9 @@ fit.after.collapse.gen <- function(formula_full,
   coefAME_main <- coefAME[1]
   for(z in 1:n_fac){
     coefAME_sub  <- coefAME[ind_b == z]
-    coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1])
+    collapse_level_b <- collapse_level[[z]][-1]
+    coefAME_m0 <- c(0, coefAME_sub)[collapse_level_b]
+    ## coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1]) (only for ordered collapsing)
     coefAME_main <- c(coefAME_main, coefAME_m0)
   }
   # For Interaction effects
@@ -131,9 +133,10 @@ crossFitPar <- function(x,
                         tableAME_base,
                         eps,
                         beta_weight,
-                        all_eq){
+                        all_eq,
+                        seed){
 
-  seed.b <- 1000*x
+  seed.b <- 1000*x + seed
   set.seed(seed.b)
   boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
   # create bootstap sample with sapply
@@ -155,7 +158,8 @@ crossFitPar <- function(x,
                                    difference = difference,
                                    tableAME_base = tableAME_base,
                                    eps = eps,
-                                   beta_weight = beta_weight)
+                                   beta_weight = beta_weight,
+                                   seed_use = seed.b)
   return(fit)
 }
 
@@ -174,7 +178,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 tableAME_base,
                                                 coefAME_base_l,
                                                 eps = 0.0001,
-                                                numCores){
+                                                numCores,
+                                                seed){
 
 
 
@@ -192,6 +197,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
 
   cat("Cross-Validation: ")
+  set.seed(seed)
   cv.lambda <- col.base.genlasso(formula = formula,
                                  data = data, pair = pair,
                                  fac.level = fac.level, ord.fac = ord.fac,
@@ -203,7 +209,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                         fac.level = fac.level, ord.fac = ord.fac,
                         nfolds = nfolds,
                         cv.type = cv.type,
-                        beta_weight = beta_weight)
+                        beta_weight = beta_weight,
+                        seed = seed)
 
   lambda <- cv.fit
 
@@ -240,7 +247,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                     tableAME_base = tableAME_base,
                     eps = eps,
                     beta_weight = beta_weight,
-                    all_eq = all_eq))
+                    all_eq = all_eq,
+                    seed = seed))
     }else {
 
       cl <- makeCluster(numCores)
@@ -270,7 +278,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                         tableAME_base = tableAME_base,
                                         eps = eps,
                                         beta_weight = beta_weight,
-                                        all_eq = all_eq)
+                                        all_eq = all_eq,
+                                        seed = seed)
                           }
       close(pb)
       stopCluster(cl)
@@ -293,7 +302,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                                 tableAME_base = tableAME_base,
                                                                 eps = eps,
                                                                 beta_weight = beta_weight,
-                                                                all_eq = all_eq),
+                                                                all_eq = all_eq,
+                                                                seed = seed),
                            mc.cores = numCores)
   }
 
@@ -344,13 +354,13 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
-  low.ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
-  high.ci <- apply(fit.mat, 1, function(x) quantile(x, 0.975))
+  low.95ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
+  high.95ci <- apply(fit.mat, 1, function(x) quantile(x, 0.975))
 
   fit[,4] <- estimate
   fit$se <- se
-  fit$low.ci <- low.ci
-  fit$high.ci <- high.ci
+  fit$low.95ci <- low.95ci
+  fit$high.95ci <- high.95ci
 
   out <- list("fit" = fit, "fit.mat" = fit.mat, "coef.mat" = coef.mat)
   return(out)
@@ -368,8 +378,10 @@ AME.collapse.gen.crossfit <- function(formula,
                                       difference = FALSE,
                                       tableAME_base,
                                       eps,
-                                      beta_weight){
+                                      beta_weight,
+                                      seed_use){
 
+  set.seed(seed_use)
   data <- data[order(data$cluster), ]
 
   train_id <- sample(unique(data$cluster), size = floor(length(unique(data$cluster))/2), replace = FALSE)
@@ -592,11 +604,13 @@ cv.genlasso <- function(formula,
                         fac.level, ord.fac,
                         nfolds = 5,
                         cv.type = "cv.1Std",
-                        beta_weight){
+                        beta_weight,
+                        seed){
 
   data <- data[order(data$cluster), ]
   lambda_c <- c()
 
+  set.seed(seed)
   for(i in 1:5){
     train_id <- sample(unique(data$cluster), size = floor(length(unique(data$cluster))/2), replace = FALSE)
     train_which <- unlist(sapply(train_id, function(x) which(data$cluster == x)))
@@ -608,7 +622,8 @@ cv.genlasso <- function(formula,
                                fac.level = fac.level, ord.fac = ord.fac,
                                nfolds = nfolds,
                                cv.type = cv.type,
-                               beta_weight = beta_weight)
+                               beta_weight = beta_weight,
+                               seed = (seed + i))
     lambda_c[i] <- cv.fit
     cat(paste(round(i*(100/5)),"%..",sep=""))
   }
@@ -623,7 +638,8 @@ cv.genlasso.base <- function(formula,
                         fac.level, ord.fac,
                         nfolds = 5,
                         cv.type = "cv.1Std",
-                        beta_weight){
+                        beta_weight,
+                        seed){
 
   # Setup y and X
 
@@ -651,7 +667,7 @@ cv.genlasso.base <- function(formula,
   fit   <- genlasso(X = X, y = y, D = D_u)
 
   # Cross Validation
-  # set.seed(seed)
+  set.seed(seed)
   foldid <- sample(rep(seq(nfolds), length = length(y)))
   MSE <- matrix(0, nrow = nfolds, ncol = length(cv.lambda))
   for (i in seq(nfolds)) {

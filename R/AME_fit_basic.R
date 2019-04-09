@@ -39,8 +39,9 @@ AME.fit <- function(formula_full,
 
   # Fit the model ----------
   main_lm <- lm(y ~ X - 1)
-  coefInt <- summary(main_lm)$coef[,1]
-  coefInt <- coefInt[is.na(coefInt) == FALSE]
+  coefInt <- coef(main_lm)
+  # coefInt <- coefInt[is.na(coefInt) == FALSE]
+  coefInt[is.na(coefInt) == TRUE] <- 0 ## Insert 0 to non-existing pairs
   base_name <- sub("X", "", names(coefInt))
   # base_name <- gsub(" ", "", base_name)
   names(coefInt) <- base_name
@@ -357,7 +358,6 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
 
   boot_coef <- outAME$boot_coef
 
-
   # Estimate conditional AMEs ----------
   effect_name <- paste(factor_name, level_name, sep="")
   coef_focus  <- boot_coef[, grep(effect_name, colnames(boot_coef), fixed = T)]
@@ -365,7 +365,7 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
   #                       grep(effect_name, colnames(vcovInt), fixed = T)]
 
   if(length(coef_focus) == 0){
-    stop(" 'level_name' cannot take the baseline level or undefined levels of the specified factor")
+    stop(" 'level_name' cannot take the baseline level or undefined levels of the specified factor.")
   }
 
   factor_all <- all.vars(formula)[-1]
@@ -617,10 +617,10 @@ plot_cAME <- function(came.out,
     par(oma = c(1, mar,1,1), mar=c(4,2,4,1))
     plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
          yaxt="n", ylab = "", main = main, xlim = p_x,
-         xlab = "Estimated Effects", col = rev(p_col_full))
+         xlab = "Estimated Effects", col = rev(p_col_full_effect))
     segments(rev(p_low_full), seq(1:length(p_coef_full)),
              rev(p_high_full), seq(1:length(p_coef_full)),
-             col = rev(p_col_full))
+             col = rev(p_col_full_effect))
     Axis(side=2, at = seq(1:length(p_name_full)),
          labels=rev(p_name_full), las=1, font = 1, tick=F, cex.axis = cex)
     Axis(side=2, at = seq(1:length(p_name_f_full)),
@@ -701,6 +701,83 @@ plot_cAME <- function(came.out,
   #                                                 p_type_prop, col= col, pch = pch)
   # }
 
+}
+
+
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
+
+decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Pop", "Exp")){
+
+  marginal_dist <- outAME$input$marginal_dist
+  marginal_dist_u_list  <- outAME$input$marginal_dist_u_list
+  marginal_dist_u_base  <- outAME$input$marginal_dist_u_base
+  marginal_type  <- outAME$input$marginal_type
+
+  if(all(is.element(marginal_diff, marginal_type)) == FALSE){
+    stop("`marginal_diff` can only take names in `marginal_type` specified in `AME_estimate_full.`")
+  }
+
+  boot_coef <- outAME$boot_coef
+  use_name <- paste(factor_name, level_name, sep = "")
+
+  # Estimate Marginal Contributions to AMEs ----------
+  coef_focus <- boot_coef[, grep(use_name, colnames(boot_coef), fixed = T)]
+  # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+  #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+  if((length(coef_focus) > 0) == FALSE){
+    stop(" 'level_name' cannot take the baseline level or undefined levels of the specified factor")
+  }
+  estNames <- gsub(paste(use_name, ":", sep = ""), "", colnames(coef_focus), fixed = T)
+  estNames <- gsub(paste(":", colnames(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+  table_AME_diff <- c()
+  # For each marginal distribution,
+  ind1 <- which(marginal_type == marginal_diff[1])
+  ind2 <- which(marginal_type == marginal_diff[2])
+  marginal_dist_u1   <- marginal_dist_u_list[[ind1]]
+  marginal_dist_u1$fac <- marginal_dist[[ind1]]$fac
+  marginal_dist_u2   <- marginal_dist_u_list[[ind2]]
+  marginal_dist_u2$fac <- marginal_dist[[ind2]]$fac
+
+  # all(marginal_dist_u1$level == marginal_dist_u2$level) ## Check
+  # all(marginal_dist_u1$fac == marginal_dist_u2$fac) ## Check
+
+  marginal_factor <- setdiff(unique(marginal_dist_u1$fac), factor_name)
+  base_mar1 <- marginal_dist_u1[match(estNames, marginal_dist_u1[, "level"]), ]
+  base_mar2 <- marginal_dist_u2[match(estNames, marginal_dist_u2[, "level"]), ]
+
+  for(m in 1:length(marginal_factor)){
+    # Find weights
+
+    use_mar1 <- base_mar1
+    use_mar1[use_mar1$fac != marginal_factor[m], "prop"] <- 0
+    use_mar2 <- base_mar2
+    use_mar2[use_mar2$fac != marginal_factor[m], "prop"] <- 0
+
+    coef_prop1 <- c(0, as.numeric(as.character(use_mar1[match(estNames, use_mar1[, "level"]), "prop"]))[-1])
+    coef_prop2 <- c(0, as.numeric(as.character(use_mar2[match(estNames, use_mar2[, "level"]), "prop"]))[-1])
+    # Compute AMEs
+    coef_AME_diff <- mean(coef_focus %*% (coef_prop1 - coef_prop2))
+    # coef_AME <- sum(coef_focus * coef_prop)
+    se_AME_diff   <- sd(coef_focus %*% (coef_prop1 - coef_prop2))
+    low_AME_diff    <- quantile(coef_focus %*% (coef_prop1 - coef_prop2), probs = c(0.025))
+    high_AME_diff   <- quantile(coef_focus %*% (coef_prop1 - coef_prop2), probs = c(0.975))
+    # se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
+    AME_diff <- data.frame(matrix(NA, ncol = 0, nrow=1))
+    AME_diff$type <- paste(marginal_diff[1], marginal_diff[2], sep = "-")
+    AME_diff$factor   <- marginal_factor[m]
+    AME_diff$estimate <- coef_AME_diff;
+    AME_diff$se <- se_AME_diff
+    AME_diff$low.95ci  <- low_AME_diff
+    AME_diff$high.95ci <- high_AME_diff
+    table_AME_diff <- rbind(table_AME_diff, AME_diff)
+  }
+  return(table_AME_diff)
 }
 
 coefMake <- function(original_level){

@@ -19,7 +19,8 @@ AME_estimate_collapse_gash <- function(formula,
                                        cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
                                        cv.type = "cv.1Std",
                                        boot = 100,
-                                       numCores){
+                                       numCores,
+                                       seed){
 
   ###########
   ## Check ##
@@ -128,7 +129,8 @@ AME_estimate_collapse_gash <- function(formula,
                                             cv.type = cv.type,
                                             tableAME_base = tableAME_base,
                                             coefAME_base_l = length(coefAME_base),
-                                            numCores = numCores)
+                                            numCores = numCores,
+                                            seed = seed)
 
   table_AME <- table_AME_f$fit
   boot_AME  <- table_AME_f$fit.mat
