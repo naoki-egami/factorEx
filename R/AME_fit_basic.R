@@ -500,12 +500,12 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
 
 plot_cAME <- function(came.out,
                       factor_name,
-                      main = c("Conditional AMEs"),
+                      main = c("Proportions", "Conditional AMEs"),
                       col,
                       pch, mar,
                       legend_pos = "topright",
                       plot_all = TRUE,
-                      plot_difference = "add",
+                      plot_difference = "no",
                       marginal_prop, marginal_effect,
                       cex = 1){
 
@@ -616,7 +616,7 @@ plot_cAME <- function(came.out,
   if(plot_all == FALSE){
     par(oma = c(1, mar,1,1), mar=c(4,2,4,1))
     plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
-         yaxt="n", ylab = "", main = main, xlim = p_x,
+         yaxt="n", ylab = "", main = "Conditional AMCEs", xlim = p_x,
          xlab = "Estimated Effects", col = rev(p_col_full_effect))
     segments(rev(p_low_full), seq(1:length(p_coef_full)),
              rev(p_high_full), seq(1:length(p_coef_full)),
@@ -626,15 +626,15 @@ plot_cAME <- function(came.out,
     Axis(side=2, at = seq(1:length(p_name_f_full)),
          labels=rev(p_name_f_full), las=1, font = 2, tick=F, cex.axis = cex)
     abline(v=0, lty=2)
-    if(is.character(legend_pos[1])==TRUE) legend(legend_pos, p_type, col= col, pch = pch)
+    if(is.character(legend_pos[1])==TRUE)  legend(legend_pos, marginal_effect, col= p_col_full_effect, pch = p_pch_full)
     if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
-                                                  p_type, col= col, pch = pch)
+                                                  marginal_effect, col= p_col_full_effect, pch = p_pch_full)
 
   }else if(plot_all == TRUE){
     par(mfrow=c(1,2), oma = c(1, mar,1,1), mar=c(4,2,4,1))
     ## Plot ----------
     plot(rev(p_cProp_full), seq(1:length(p_cProp_full)), pch=rev(p_pch_full_prop),
-         yaxt="n", ylab = "", main = main[2], xlim = p_x_prop,
+         yaxt="n", ylab = "", main = main[1], xlim = p_x_prop,
          xlab = "Proportions", col = rev(p_col_full_prop))
     segments(rev(p_cProp_full), seq(1:length(p_cProp_full)),
              0, seq(1:length(p_cProp_full)),
@@ -649,7 +649,7 @@ plot_cAME <- function(came.out,
                                                   p_type_prop, col= col, pch = pch)
 
     plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
-         yaxt="n", ylab = "", main = main[1], xlim = p_x,
+         yaxt="n", ylab = "", main = main[2], xlim = p_x,
          xlab = "Estimated Effects", col = rev(p_col_full_effect))
     segments(rev(p_low_full), seq(1:length(p_coef_full)),
              rev(p_high_full), seq(1:length(p_coef_full)),
@@ -769,7 +769,7 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
     high_AME_diff   <- quantile(coef_focus %*% (coef_prop1 - coef_prop2), probs = c(0.975))
     # se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
     AME_diff <- data.frame(matrix(NA, ncol = 0, nrow=1))
-    AME_diff$type <- paste(marginal_diff[1], marginal_diff[2], sep = "-")
+    AME_diff$type <- paste(marginal_diff[1], marginal_diff[2], sep = " - ")
     AME_diff$factor   <- marginal_factor[m]
     AME_diff$estimate <- coef_AME_diff;
     AME_diff$se <- se_AME_diff
@@ -779,6 +779,54 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
   }
   return(table_AME_diff)
 }
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
+
+plot_AME <- function(outAME, factor_name, level_name, type,
+                     marginal_diff, mar = 8){
+
+  if(is.element(type, c("decompose", "diagnostics")) == FALSE){
+    stop("type should be `decompose` or `diagnostics.`")
+  }
+
+
+  if(type == "decompose"){
+
+    if(missing(marginal_diff)){
+      if(length(outAME$input$marginal_type) == 1){
+        stop("Cannot compare two marginal distributions because `AME_full_estimate`` only includes one marginal distribution.")
+      }else{
+      marginal_diff <- outAME$input$marginal_type[c(2, 1)]
+      }
+    }
+
+    dec_tab <- decompose_AME(outAME = outAME, factor_name = factor_name, level_name = level_name,
+                             marginal_diff = marginal_diff)
+
+    point <- rev(dec_tab[,3])
+    low  <- rev(dec_tab[,5])
+    high   <- rev(dec_tab[,6])
+    fac_name_p <- rev(dec_tab[,2])
+
+    xmin <- min(low); xmax <- max(high)
+
+    par(mar = c(4, mar, 6, 4))
+    plot(point, seq(1:nrow(dec_tab)), pch = 19, ylim = c(0.5, nrow(dec_tab)+0.5), yaxt = "n",
+        xlim = c(xmin, xmax), ylab =  "", xlab = "Change in Popuation AMCE",
+        main = paste("Decompose Change in Popolation AMCE:\n", unique(dec_tab$type), sep =""))
+    segments(low, seq(1:nrow(dec_tab)), high, seq(1:nrow(dec_tab)), lwd = 2)
+    abline(v = 0, lty = 2)
+    Axis(side = 2, at = seq(1:nrow(dec_tab)), labels = fac_name_p, las = 1)
+  }
+
+
+}
+
 
 coefMake <- function(original_level){
   # Expand Coefficients
