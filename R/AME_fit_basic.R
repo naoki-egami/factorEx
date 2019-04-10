@@ -874,8 +874,8 @@ createDist <- function(formula, data){
 
     marginal <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
     marginal$factor   <- factor_u
-    marginal$levels_u <- levels_u
-    marginal$prop_u   <- prop_u
+    marginal$levels <- levels_u
+    marginal$prop   <- prop_u
     return(marginal)
 }
 

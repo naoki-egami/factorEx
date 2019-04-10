@@ -84,6 +84,10 @@ AME_estimate_full <- function(formula,
       stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
   }
 
+  if(class(marginal_dist) != "list"){
+      marginal_dist <- list(marginal_dist)
+  }
+
 
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
