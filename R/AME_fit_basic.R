@@ -857,7 +857,27 @@ coefMake <- function(original_level){
 }
 
 
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
 
+createDist <- function(formula, data){
+    dataX <- model.frame(formula, data)[,-1]
+
+    all_levels <- lapply(dataX, levels)
+    factor_u <-  rep(names(all_levels), unlist(lapply(all_levels, length)))
+    levels_u <- c(unlist(all_levels))
+    prop_u   <- unlist(lapply(dataX, function(x) prop.table(table(x))))
+
+    marginal <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+    marginal$factor   <- factor_u
+    marginal$levels_u <- levels_u
+    marginal$prop_u   <- prop_u
+    return(marginal)
+}
 
 
 
