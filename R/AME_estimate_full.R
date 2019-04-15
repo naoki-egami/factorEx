@@ -43,6 +43,9 @@ AME_estimate_full <- function(formula,
 
   cat("Using version-conditional_effect:\n")
 
+  ###########
+  ## Check ##
+  ###########
   if((type %in% c("No-Reg","gash-anova", "genlasso")) == FALSE){
     warning(" 'type' should be one of 'No-Reg', 'gash-anova' and 'genalsso' ")
   }
@@ -54,6 +57,45 @@ AME_estimate_full <- function(formula,
     if(numCores >= detectCores()) numCores <- detectCores() - 1
   }
   if(is.null(numCores)) numCores <- detectCores() - 1
+
+  ###########
+  ## Check ##
+  ###########
+  if(any(is.na(data))==TRUE){
+    stop("Remove NA before using this function.")
+  }
+  if(pair==TRUE & is.null(pair_id)==TRUE){
+    stop("When 'pair=TRUE', specify 'pair_id'.")
+  }
+  if(pair==TRUE & all(table(pair_id)==2)==FALSE){
+    stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
+  }
+  if(difference==TRUE & length(marginal_type) < 2){
+    stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
+  }
+  if(class(marginal_dist) != "list"){
+    marginal_dist <- list(marginal_dist)
+  }
+  if(is.list(marginal_dist)==FALSE){
+    stop("marginal_dist should be 'list'.")
+  }
+  marginal_name_check <- lapply(marginal_dist, colnames)
+  marginal_name_check_all <- all(unlist(lapply(marginal_name_check,
+                                               function(x) all(x == c("factor", "levels", "prop")))))
+  if(marginal_name_check_all == FALSE){
+    stop(" 'colnames' of 'marginal_dist' should be c('factor', 'levels', 'prop') ")
+  }
+  if(length(marginal_type) > 1){
+    for(z in 2:length(marginal_type)){
+      if(all(marginal_dist[[1]][,1] == marginal_dist[[z]][,1]) == FALSE) stop("marginal_dist should have the same order for factor.")
+      if(all(marginal_dist[[1]][,2] == marginal_dist[[z]][,2]) == FALSE) stop("marginal_dist should have the same order for levels.")
+    }
+  }
+  # make them as character
+  for(z in 1:length(marginal_dist)){
+    marginal_dist[[z]]$factor <- as.character(marginal_dist[[z]]$factor)
+    marginal_dist[[z]]$levels <- as.character(marginal_dist[[z]]$levels)
+  }
 
   ## Check Baselines
   factor_l <- length(all.vars(formula)[-1])
@@ -83,11 +125,6 @@ AME_estimate_full <- function(formula,
       wa5 <- paste("Change baselines for ", paste(rest_fac, collapse = " and "), " using relevel().", sep = "")
       stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
   }
-
-  if(class(marginal_dist) != "list"){
-      marginal_dist <- list(marginal_dist)
-  }
-
 
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
