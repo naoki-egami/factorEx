@@ -18,7 +18,9 @@ AME_estimate_collapse_gash <- function(formula,
                                        nway = 1,
                                        cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
                                        cv.type = "cv.1Std",
-                                       boot = 100){
+                                       boot = 100,
+                                       numCores,
+                                       seed){
 
   ###########
   ## Check ##
@@ -72,6 +74,8 @@ AME_estimate_collapse_gash <- function(formula,
   fac.level <- unlist(lapply(model.frame(formula, data=data)[,-1],
                              FUN = function(x) length(levels(x))))
 
+  original_level <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x))
+
   # Check ----------
   marginal_dist_u0 <- marginal_dist[[1]]
   marginal_dist_u <- data.frame(matrix(NA, ncol=0, nrow=nrow(marginal_dist_u0)))
@@ -93,17 +97,17 @@ AME_estimate_collapse_gash <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   # base
-  tableAME_base <- AME.fit(formula,
-                           data = data, pair = pair,
-                           marginal_dist = marginal_dist,
-                           marginal_dist_u_list = marginal_dist_u_list,
-                           marginal_dist_u_base = marginal_dist_u_base,
-                           marginal_type = marginal_type,
-                           difference = difference)
+  fitAME_base <- AME.fit(formula,
+                         data = data, pair = pair,
+                         marginal_dist = marginal_dist,
+                         marginal_dist_u_list = marginal_dist_u_list,
+                         marginal_dist_u_base = marginal_dist_u_base,
+                         marginal_type = marginal_type,
+                         difference = difference)
+
+  tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
-
-
-
+  coefAME_base  <- coefMake(original_level)
 
   # Collapsing
   if(pair == TRUE)  data$pair_id <- pair_id
@@ -116,16 +120,22 @@ AME_estimate_collapse_gash <- function(formula,
                                             data = data,
                                             pair = pair,
                                             cv.collapse.cost = cv.collapse.cost,
+                                            fac.level = fac.level, ord.fac = ord.fac,
                                             marginal_dist = marginal_dist,
                                             marginal_type = marginal_type,
                                             difference = difference,
                                             boot = boot, family = family,
                                             nway = nway,
                                             cv.type = cv.type,
-                                            tableAME_base = tableAME_base)
+                                            tableAME_base = tableAME_base,
+                                            coefAME_base_l = length(coefAME_base),
+                                            numCores = numCores,
+                                            seed = seed)
 
   table_AME <- table_AME_f$fit
   boot_AME  <- table_AME_f$fit.mat
+  boot_coef <- table_AME_f$coef.mat
+  colnames(boot_coef) <- coefAME_base
 
   ## For Each Factor
   AME <- list()
@@ -139,11 +149,13 @@ AME_estimate_collapse_gash <- function(formula,
   input  <- list("formula" = formula, "data" = data,
                  "pair" = pair, "pair_id" = pair_id,
                  "marginal_dist" = marginal_dist,
+                 "marginal_dist_u_list" = marginal_dist_u_list,
+                 "marginal_dist_u_base" = marginal_dist_u_base,
                  "marginal_type" = marginal_type, "difference" = difference)
 
   output <- list("AME" = AME, "baseline" = baseline,
                  "type_all" = type_all, "type_difference" = type_difference,
-                 "boot_AME" = boot_AME,
+                 "boot_AME" = boot_AME, "boot_coef" = boot_coef,
                  "input" = input)
   return(output)
 }
