@@ -398,6 +398,8 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
   formula <- outAME$input$formula
   data    <- outAME$input$data
 
+  cross_int <- outAME$input$cross_int
+
   leveluse <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[-1])
   leveluse_all <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x))
 
@@ -414,18 +416,30 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
   }
 
   factor_all <- all.vars(formula)[-1]
-  part_pos <- lapply(leveluse[!(names(leveluse) %in% factor_name)], length)
+  if(cross_int == TRUE){
+    part_pos <- append(lapply(leveluse[!(names(leveluse) %in% factor_name)], length), length(leveluse[[factor_name]]))
+    names(part_pos)[length(part_pos)] <- factor_name
+    leveluse_all_b <- append(leveluse_all[!(names(leveluse_all) %in% factor_name)], leveluse_all[factor_name])
+  }else{
+    part_pos <- lapply(leveluse[!(names(leveluse) %in% factor_name)], length)
+    leveluse_all_b <- leveluse_all[!(names(leveluse_all) %in% factor_name)]
+  }
   end_pos   <- cumsum(part_pos) + 1
   start_pos <- c(2, end_pos[-length(end_pos)] + 1)
 
   estNames <- gsub(paste(effect_name, ":", sep = ""), "", colnames(coef_focus), fixed = T)
   estNames <- gsub(paste(":", effect_name, sep = ""), "", estNames, fixed = T)
 
+  if(cross_int == TRUE){
+    estNames <- sub(paste(factor_name,"_rp", sep = ""), factor_name, estNames)
+  }
+
+
   # Estimate Conditional AMEs
   table_cAME <- table_cProp <- c()
-  for(m in 1:(length(factor_all) - 1)){
+  for(m in 1:length(part_pos)){
     ind_focus_mat <- matrix(1, ncol = (as.numeric(part_pos[m][1]) + 1), nrow = ncol(coef_focus))
-    leveluse_focus <- leveluse_all[!(names(leveluse_all) %in% factor_name)][m]
+    leveluse_focus <- leveluse_all_b[m]
     leveluse_name  <- paste(names(leveluse_focus), unlist(leveluse_focus), sep="")
     table_cAME_m <- table_cProp_m <- c()
     # For each marginal distribution,
@@ -981,6 +995,117 @@ plot_AME <- function(ame.out,
   if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
                                                 plot_name, col= col, pch = pch)
 }
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
+
+plot_dist <- function(factor_name,
+                      marginal_dist, marginal_type,
+                      main = "Marginal Distibution",
+                      col, pch, mar,
+                      legend_pos = "topright",
+                      cex){
+
+  if(is.list(marginal_dist)==FALSE){
+    stop("marginal_dist should be 'list'.")
+  }
+
+  marginal_name_check <- lapply(marginal_dist, colnames)
+  marginal_name_check_all <- all(unlist(lapply(marginal_name_check,
+                                               function(x) all(x == c("factor", "levels", "prop")))))
+  if(marginal_name_check_all == FALSE){
+    stop(" 'colnames' of 'marginal_dist' should be c('factor', 'levels', 'prop') ")
+  }
+
+  if(length(marginal_type) > 1){
+    for(z in 2:length(marginal_type)){
+      if(all(marginal_dist[[1]][,1] == marginal_dist[[z]][,1]) == FALSE) stop("marginal_dist should have the same order for factor.")
+      if(all(marginal_dist[[1]][,2] == marginal_dist[[z]][,2]) == FALSE) stop("marginal_dist should have the same order for levels.")
+    }
+  }
+
+  if(all(is.element(factor_name, unique(marginal_dist[[1]]$factor))) == FALSE){
+    stop(" 'factor_name' can only take a subset of factors estimated in 'cAME.estimate'")
+  }
+  if(missing(col)){
+    col <- rep("black",length(unique(marginal_dist[[1]]$levels)))
+  }
+  if(missing(pch)){
+    pch <- rep(19,length(unique(marginal_dist[[1]]$levels)))
+  }
+  if(missing(mar)){
+    mar <- 6
+  }
+
+  ## Collect all Distributions ----------
+  p_mar_coef <- list()
+  for(z in 1: length(marginal_dist)){
+    p_coef_full <- c()
+    p_name_full <- p_name_f_full <- p_col_full <- p_pch_full <- c()
+    for(g in 1:length(factor_name)){
+      p_mar  <- marginal_dist[[z]][marginal_dist[[z]]$factor == factor_name[g], ]
+
+      p_coef <- c(NA, p_mar$prop)
+      p_name_t <- paste(factor_name[g], ":   ", sep="")
+      p_name_b   <- as.character(p_mar$levels)
+      p_name_b[p_mar$type != p_mar$type[1]] <- ""
+      p_name_f <- c(p_name_t, rep("", length(p_name_b)))
+      p_name   <- c("", p_name_b)
+      p_col  <- c(NA, rep(col[z], length(unique(p_mar$levels))))
+      p_pch  <- c(NA, rep(pch[z], length(unique(p_mar$levels))))
+
+      ## Store values
+      p_coef_full  <- c(p_coef_full, p_coef)
+      p_name_f_full <- c(p_name_f_full, p_name_f)
+      p_name_full <- c(p_name_full, p_name)
+      p_col_full  <- c(p_col_full, p_col)
+      p_pch_full  <- c(p_pch_full, p_pch)
+    }
+    p_mar_coef$p_coef_full[[z]] <- p_coef_full
+    p_mar_coef$p_name_full[[z]] <- p_name_full
+    p_mar_coef$p_name_f_full[[z]] <- p_name_f_full
+    p_mar_coef$p_col_full[[z]] <- p_col_full
+    p_mar_coef$p_pch_full[[z]] <- p_pch_full
+  }
+
+
+  ## Plot Setup for Proportion----------
+  p_type_prop <- marginal_type
+  p_x_prop <- c(0, max(unlist(p_mar_coef$p_coef_full), na.rm = TRUE))
+
+  ## Plot ----------
+
+  par(oma = c(1, mar,1,1), mar=c(4,2,4,1))
+  ## Plot ----------
+  plot(rev(p_mar_coef$p_coef_full[[1]]), seq(1:length(p_mar_coef$p_coef_full[[1]])),
+       pch=pch[1],
+       yaxt="n", ylab = "", main = main, xlim = p_x_prop, type = "o",
+       ylim = c(1, length(p_name_f_full)),
+       xlab = "Proportions", col = col[1])
+  if(length(marginal_dist) > 1){
+    for(z in 2:length(marginal_dist)){
+      points(rev(p_mar_coef$p_coef_full[[z]]),
+             seq(1:length(p_mar_coef$p_coef_full[[z]])) + 0.05*z,
+             pch=pch[z], type = "o", col = col[z])
+    }
+  }
+  Axis(side=2, at = 0.25 + seq(1:length(p_mar_coef$p_name_full[[1]])),
+       labels = rev(p_mar_coef$p_name_full[[1]]), las=1, font = 1, tick=F,
+       cex.axis = cex)
+  Axis(side=2, at = 0.25 + seq(1:length(p_mar_coef$p_name_f_full[[1]])),
+       labels = rev(p_mar_coef$p_name_f_full[[1]]), las=1, font = 2, tick=F,
+       cex.axis = cex)
+  abline(v=0, lty=2)
+  if(is.character(legend_pos[1])==TRUE)  legend(legend_pos, p_type_prop, col= col, pch = pch)
+  if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                p_type_prop, col= col, pch = pch)
+
+}
+
 
 
 
