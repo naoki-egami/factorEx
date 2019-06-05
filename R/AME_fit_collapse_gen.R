@@ -1,9 +1,9 @@
 collapse.fit.gen <- function(formula,
-                              data, pair = TRUE,
-                              lambda,
-                              fac.level, ord.fac,
-                              eps = 0.0001,
-                              beta_weight){
+                             data, pair = TRUE,
+                             lambda,
+                             fac.level, ord.fac,
+                             eps = 0.0001,
+                             beta_weight){
 
   beta <- col.genlasso(formula = formula,
                        data = data, pair = pair,
@@ -28,7 +28,7 @@ collapse.fit.gen <- function(formula,
 fit.after.collapse.gen <- function(formula_full,
                                    newdata,
                                    collapse_level,
-                                   pair=FALSE,
+                                   pair=FALSE, cross_int,
                                    marginal_dist,
                                    marginal_type,
                                    tableAME_base,
@@ -55,7 +55,7 @@ fit.after.collapse.gen <- function(formula_full,
 
 
   fitAME <- AME.fit(formula_full,
-                    data = c_data_mar$data_new, pair=pair,
+                    data = c_data_mar$data_new, pair = pair, cross_int = cross_int,
                     marginal_dist = marginal_dist_c,
                     marginal_dist_u_list = marginal_dist_u_list,
                     marginal_dist_u_base = marginal_dist_u_base,
@@ -77,7 +77,7 @@ fit.after.collapse.gen <- function(formula_full,
     ## coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1]) (only for ordered collapsing)
     coefAME_main <- c(coefAME_main, coefAME_m0)
   }
-  # For Interaction effects
+  # For Interaction effects (within profiles)
   combMat <- combn(n_fac, 2)
   coefAME_int <- c()
   for(z in 1:ncol(combMat)){
@@ -94,6 +94,25 @@ fit.after.collapse.gen <- function(formula_full,
     coefAME_int <- c(coefAME_int, coefAME_i0)
   }
   coefAME_long <- c(coefAME_main, coefAME_int)
+
+  # For Interaction effects (within profiles)
+  if(cross_int == TRUE){
+    main_int <- n_fac + ncol(combMat)
+    coefAME_cross_int <- c()
+    for(z in 1:n_fac){
+      coefAME_sub <- coefAME[ind_b == (z + main_int)]
+      c_1 <- c_2 <- seq(from = 2, to = max(collapse_level[[z]]))
+      c_ind <- paste(rep(c_1, times = length(c_2)), rep(c_2, each = length(c_1)), sep = "_")
+
+      l_ind <- paste(rep(collapse_level[[z]][-1], times = length(collapse_level[[z]]) - 1),
+                     rep(collapse_level[[z]][-1], each = length(collapse_level[[z]]) - 1),
+                     sep = "_")
+      coefAME_i0 <- coefAME_sub[match(l_ind, c_ind)]
+      coefAME_i0[is.na(coefAME_i0)] <- 0
+      coefAME_cross_int <- c(coefAME_cross_int, coefAME_i0)
+    }
+    coefAME_long <- c(coefAME_long, coefAME_cross_int)
+  }
 
   # Expand
   type_l <- length(unique(tableAME_base$type))
@@ -124,7 +143,7 @@ crossFitPar <- function(x,
                         formula,
                         formula_full,
                         data,
-                        pair,
+                        pair, cross_int,
                         fac.level, ord.fac,
                         lambda,
                         marginal_dist,
@@ -150,7 +169,7 @@ crossFitPar <- function(x,
   fit <- AME.collapse.gen.crossfit(formula = formula,
                                    formula_full = formula_full,
                                    data = data_boot,
-                                   pair = pair,
+                                   pair = pair, cross_int = cross_int,
                                    fac.level = fac.level, ord.fac = ord.fac,
                                    lambda = lambda,
                                    marginal_dist = marginal_dist,
@@ -167,7 +186,7 @@ crossFitPar <- function(x,
 
 AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 data,
-                                                pair = FALSE,
+                                                pair = FALSE, cross_int,
                                                 fac.level, ord.fac,
                                                 cv.type = "cv.1Std",
                                                 nfolds = 2,
@@ -191,7 +210,6 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
 
   # setup beta weights
-
   beta_weight <- makeWeight(formula = formula, data = data, pair = pair,
                             fac.level = fac.level, ord.fac = ord.fac)
 
@@ -238,7 +256,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                     formula = formula,
                     formula_full = formula_full,
                     data = data,
-                    pair = pair,
+                    pair = pair, cross_int = cross_int,
                     fac.level = fac.level, ord.fac = ord.fac,
                     lambda = lambda,
                     marginal_dist = marginal_dist,
@@ -269,7 +287,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                         formula = formula,
                                         formula_full = formula_full,
                                         data = data,
-                                        pair = pair,
+                                        pair = pair, cross_int = cross_int,
                                         fac.level = fac.level, ord.fac = ord.fac,
                                         lambda = lambda,
                                         marginal_dist = marginal_dist,
@@ -293,7 +311,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                                 formula = formula,
                                                                 formula_full = formula_full,
                                                                 data = data,
-                                                                pair = pair,
+                                                                pair = pair, cross_int = cross_int,
                                                                 fac.level = fac.level, ord.fac = ord.fac,
                                                                 lambda = lambda,
                                                                 marginal_dist = marginal_dist,
@@ -369,7 +387,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 AME.collapse.gen.crossfit <- function(formula,
                                       formula_full,
                                       data,
-                                      pair=FALSE,
+                                      pair=FALSE, cross_int,
                                       lambda,
                                       fac.level,
                                       ord.fac,
@@ -395,40 +413,40 @@ AME.collapse.gen.crossfit <- function(formula,
 
   # Fit 1
   fit_col_1 <- collapse.fit.gen(formula = formula,
-                                 data = data_train, pair = pair,
-                                 lambda = lambda,
-                                 fac.level = fac.level, ord.fac = ord.fac,
-                                 eps = eps,
-                                 beta_weight = beta_weight)
+                                data = data_train, pair = pair,
+                                lambda = lambda,
+                                fac.level = fac.level, ord.fac = ord.fac,
+                                eps = eps,
+                                beta_weight = beta_weight)
 
   fitAME_1 <- fit.after.collapse.gen(formula_full = formula_full,
-                                       newdata = data_test,
-                                       collapse_level = fit_col_1,
-                                       pair = pair,
-                                       marginal_dist = marginal_dist,
-                                       marginal_type = marginal_type,
-                                       tableAME_base = tableAME_base,
-                                       difference = difference)
+                                     newdata = data_test,
+                                     collapse_level = fit_col_1,
+                                     pair = pair, cross_int = cross_int,
+                                     marginal_dist = marginal_dist,
+                                     marginal_type = marginal_type,
+                                     tableAME_base = tableAME_base,
+                                     difference = difference)
 
   tableAME_1 <- fitAME_1$tableAME_new
   coefAME_1  <- fitAME_1$coef
 
   # Fit 2
   fit_col_2 <- collapse.fit.gen(formula = formula,
-                                 data = data_test, pair = pair,
-                                 lambda = lambda,
-                                 fac.level = fac.level, ord.fac = ord.fac,
-                                 eps = eps,
-                                 beta_weight = beta_weight)
+                                data = data_test, pair = pair,
+                                lambda = lambda,
+                                fac.level = fac.level, ord.fac = ord.fac,
+                                eps = eps,
+                                beta_weight = beta_weight)
 
   fitAME_2 <- fit.after.collapse.gen(formula_full = formula_full,
-                                       newdata = data_train,
-                                       collapse_level = fit_col_2,
-                                       pair = pair,
-                                       marginal_dist = marginal_dist,
-                                       marginal_type = marginal_type,
-                                       tableAME_base = tableAME_base,
-                                       difference = difference)
+                                     newdata = data_train,
+                                     collapse_level = fit_col_2,
+                                     pair = pair, cross_int = cross_int,
+                                     marginal_dist = marginal_dist,
+                                     marginal_type = marginal_type,
+                                     tableAME_base = tableAME_base,
+                                     difference = difference)
 
   tableAME_2 <- fitAME_2$tableAME_new
   coefAME_2  <- fitAME_2$coef
@@ -545,9 +563,12 @@ col.genlasso <- function(formula,
     side <- rep(c(1,0), times=nrow(data0)/2)
     data1 <- data0[side==1,]
     data2 <- data0[side==0,]
+
+
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
     y <- model.frame(formula,data=data1)[ ,1]
   }else{
     X <- model.matrix(formula, data=data)
@@ -633,13 +654,13 @@ cv.genlasso <- function(formula,
 }
 
 cv.genlasso.base <- function(formula,
-                        data, pair = TRUE,
-                        cv.lambda,
-                        fac.level, ord.fac,
-                        nfolds = 5,
-                        cv.type = "cv.1Std",
-                        beta_weight,
-                        seed){
+                             data, pair = TRUE,
+                             cv.lambda,
+                             fac.level, ord.fac,
+                             nfolds = 5,
+                             cv.type = "cv.1Std",
+                             beta_weight,
+                             seed){
 
   # Setup y and X
 
@@ -648,9 +669,11 @@ cv.genlasso.base <- function(formula,
     side <- rep(c(1,0), times=nrow(data0)/2)
     data1 <- data0[side==1,]
     data2 <- data0[side==0,]
+
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
     y <- model.frame(formula,data=data1)[ ,1]
   }else{
     X <- model.matrix(formula, data=data)
@@ -716,9 +739,13 @@ col.base.genlasso <- function(formula,
     side <- rep(c(1,0), times=nrow(data0)/2)
     data1 <- data0[side==1,]
     data2 <- data0[side==0,]
+
+
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
+
     y <- model.frame(formula,data=data1)[ ,1]
   }else{
     X <- model.matrix(formula, data=data_h)
@@ -809,9 +836,12 @@ makeWeight <- function(formula,
     side <- rep(c(1,0), times=nrow(data0)/2)
     data1 <- data0[side==1,]
     data2 <- data0[side==0,]
+
+
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
     y <- model.frame(formula,data=data1)[ ,1]
   }else{
     X <- model.matrix(formula, data=data)

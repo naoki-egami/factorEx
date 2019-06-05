@@ -11,7 +11,7 @@
 AME_estimate_collapse_genlasso <- function(formula,
                                            data,
                                            ord.fac,
-                                           pair=FALSE, pair_id = NULL,
+                                           pair=FALSE, pair_id = NULL, cross_int = TRUE,
                                            cluster = NULL,
                                            marginal_dist,
                                            marginal_type,
@@ -99,7 +99,7 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   # base
   fitAME_base <- AME.fit(formula = formula,
-                         data = data, pair = pair,
+                         data = data, pair = pair, cross_int = cross_int,
                          marginal_dist = marginal_dist,
                          marginal_dist_u_list = marginal_dist_u_list,
                          marginal_dist_u_base = marginal_dist_u_base,
@@ -108,7 +108,7 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
-  coefAME_base  <- coefMake(original_level)
+  coefAME_base  <- coefMake(original_level, cross_int = cross_int)
 
   # Collapsing
   if(pair == TRUE)  data$pair_id <- pair_id
@@ -119,7 +119,7 @@ AME_estimate_collapse_genlasso <- function(formula,
 
   table_AME_f <- AME.collapse.genlasso.crossfit.boot(formula = formula,
                                                      data = data,
-                                                     pair = pair,
+                                                     pair = pair, cross_int = cross_int,
                                                      fac.level = fac.level, ord.fac = ord.fac,
                                                      marginal_dist = marginal_dist,
                                                      marginal_type = marginal_type,
@@ -148,7 +148,7 @@ AME_estimate_collapse_genlasso <- function(formula,
   type_difference   <- setdiff(unique(table_AME$type), marginal_type)
 
   input  <- list("formula" = formula, "data" = data,
-                 "pair" = pair, "pair_id" = pair_id,
+                 "pair" = pair, "pair_id" = pair_id, "cross_int" = cross_int,
                  "marginal_dist" = marginal_dist,
                  "marginal_dist_u_list" = marginal_dist_u_list,
                  "marginal_dist_u_base" = marginal_dist_u_base,

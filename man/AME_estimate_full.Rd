@@ -5,10 +5,11 @@
 \title{Estimating PAMCE withithout regularization}
 \usage{
 AME_estimate_full(formula, data, type = "genlasso", ord.fac,
-  pair = FALSE, pair_id = NULL, cluster = NULL, marginal_dist,
-  marginal_type, difference = FALSE, family = "binomial", nway = 1,
-  cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7), cv.type = "cv.1Std",
-  nfolds = 5, boot = 100, seed = 1234, numCores = NULL)
+  pair = FALSE, pair_id = NULL, cross_int = TRUE, cluster = NULL,
+  marginal_dist, marginal_type, difference = FALSE,
+  family = "binomial", nway = 1, cv.collapse.cost = c(0.1, 0.3, 0.5,
+  0.7), cv.type = "cv.1Std", nfolds = 5, boot = 100, seed = 1234,
+  numCores = NULL)
 }
 \arguments{
 \item{formula}{formula}
@@ -21,7 +22,7 @@ AME_estimate_full(formula, data, type = "genlasso", ord.fac,
 
 \item{pair}{whether we use the paired-conjoint design}
 
-\item{pair_id}{id for paired-conjoint design. required when 'pair = TRUE'}
+\item{cross_int}{include interactions across profiles}
 
 \item{cluster}{id for cluster}
 

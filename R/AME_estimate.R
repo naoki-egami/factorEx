@@ -7,7 +7,7 @@
 
 AME_estimate <- function(formula,
                          data,
-                         pair = FALSE, pair_id = NULL,
+                         pair = FALSE, pair_id = NULL, cross_int = TRUE,
                          cluster,
                          marginal_dist,
                          marginal_type,
@@ -24,6 +24,9 @@ AME_estimate <- function(formula,
   }
   if(pair==TRUE & all(table(pair_id)==2)==FALSE){
     stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
+  }
+  if(pair == FALSE){
+    cross_int <- FALSE
   }
   if(difference==TRUE & length(marginal_type) < 2){
     stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
@@ -70,14 +73,37 @@ AME_estimate <- function(formula,
   # Differencing ----------
   if(pair==TRUE){
     data0 <- data[order(pair_id),]
-    side <- rep(c(1,0),times=nrow(data0)/2)
+    side <- rep(c(1,0), times=nrow(data0)/2)
     data1 <- data0[side==1,]
     data2 <- data0[side==0,]
     cluster_original <- cluster
     cluster <- cluster[side==1]
-    X1 <- model.matrix(formula_full, data=data1)[ ,-1]
+
+    X1 <- model.matrix(formula_full, data=data1)[,-1]
     X2 <- model.matrix(formula_full, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
+    if(cross_int == TRUE){
+
+      base_fac <- all.vars(formula_full)[-1]
+      data2_u <- data2[,base_fac]; colnames(data2_u) <- paste(base_fac,"_rp",sep="")
+      data_c <- cbind(data1[,base_fac], data2_u)
+      for_cross <- paste("~", paste(paste(base_fac, paste(base_fac,"_rp",sep=""), sep="*"),
+                                    collapse = "+"))
+      for_cross0 <- paste("~", paste(base_fac, collapse = "+"))
+      data_cross0 <- model.matrix(as.formula(for_cross0), data = data_c)[,-1]
+      sing <- 2*ncol(data_cross0)
+      data_cross <- model.matrix(as.formula(for_cross), data = data_c)
+      ind_b_c <- attr(data_cross, "assign")[-1]
+      data_cross <- data_cross[,-1]
+      X_cross <- data_cross[, c((sing + 1): ncol(data_cross))]
+      colnames(X_cross) <- sub("_0c", "", colnames(X_cross))
+      ind_b_c <- ind_b_c[c((sing + 1): ncol(data_cross))]
+
+      # modify X and ind_b
+      X <- cbind(X, X_cross)
+    }
+
     y <- model.frame(formula_full,data=data1)[ ,1]
     # base_name <- c("(Intercept)", colnames(X1))
   }else{
@@ -126,6 +152,12 @@ AME_estimate <- function(formula,
     if(length(coef_focus) > 0){
       estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
       estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+
+      if(cross_int == TRUE){
+        estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
+                        marginal_dist[[1]]$factor[m], estNames)
+      }
+
       table_AME_m <- c()
       # For each marginal distribution,
       for(z in 1:length(marginal_dist)){
@@ -207,7 +239,7 @@ AME_estimate <- function(formula,
   type_difference   <- setdiff(unique(table_AME_full$type), marginal_type)
 
   input  <- list("formula" = formula, "data" = data,
-                 "pair" = pair, "pair_id" = pair_id,
+                 "pair" = pair, "pair_id" = pair_id, "cross_int" = cross_int,
                  "cluster" = cluster_original, "marginal_dist" = marginal_dist,
                  "marginal_type" = marginal_type, "difference" = difference)
 

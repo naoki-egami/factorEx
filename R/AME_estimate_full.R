@@ -4,7 +4,7 @@
 #' @param type "No-Reg", "gash-anova", or "genlasso"
 #' @param ord.fac whether we assume each factor is ordered. When not specified, we assume all of them are ordered.
 #' @param pair whether we use the paired-conjoint design
-#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @param cross_int include interactions across profiles
 #' @param cluster id for cluster
 #' @param marginal_dist marginal distributions
 #' @param marginal_type names of marginal distributions
@@ -28,7 +28,7 @@ AME_estimate_full <- function(formula,
                               data,
                               type = "genlasso",
                               ord.fac,
-                              pair = FALSE, pair_id = NULL,
+                              pair = FALSE, pair_id = NULL, cross_int = TRUE,
                               cluster = NULL,
                               marginal_dist,
                               marginal_type,
@@ -70,6 +70,15 @@ AME_estimate_full <- function(formula,
   if(pair==TRUE & all(table(pair_id)==2)==FALSE){
     stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
   }
+  if(pair == FALSE){
+    cross_int <- FALSE
+  }
+  # if(is.null(pair_var) == FALSE){
+  #   if(all(is.element(pair_var, all.vars(formula))) == FALSE){
+  #     stop(" 'pair_var' should be variables listed in 'formula' ")}
+  #   if(pair == FALSE){
+  #     stop(" 'pair_var' is ignored when 'pair=FALSE' ")}
+  # }
   if(difference==TRUE & length(marginal_type) < 2){
     stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
   }
@@ -129,7 +138,7 @@ AME_estimate_full <- function(formula,
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
                          data = data,
-                         pair = pair, pair_id = pair_id,
+                         pair = pair, pair_id = pair_id, cross_int = cross_int,
                          cluster = cluster,
                          marginal_dist = marginal_dist,
                          marginal_type = marginal_type,
@@ -157,7 +166,7 @@ AME_estimate_full <- function(formula,
     out <- AME_estimate_collapse_genlasso(formula = formula,
                                           data = data,
                                           ord.fac = ord.fac,
-                                          pair = pair, pair_id = pair_id,
+                                          pair = pair, pair_id = pair_id, cross_int = cross_int,
                                           cluster = cluster,
                                           marginal_dist = marginal_dist,
                                           marginal_type = marginal_type,
