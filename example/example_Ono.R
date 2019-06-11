@@ -30,9 +30,45 @@ summary(lm_2)
 
 
 # Specify Formula
-formula_u <- Y ~ gender + age + family + race + experience + trait + party +
-  policy_expertise + pos_security + pos_immigrants + pos_abortion +
-  pos_deficit + fav_rating
+
+
+{formula_orig <- formula
+  fac_size <- length(all.vars(formula)[-1])
+  fac_name_orig <- all.vars(formula)[-1]
+  fac_name <- paste("f_", seq(1:fac_size), "_f", sep = "")
+  formula  <- as.formula(paste("Y ~", paste(fac_name, collapse = "+"), sep = ""))
+  rename_fac <- cbind(all.vars(formula_orig), c("Y", fac_name))
+  colnames(rename_fac) <- c("original", "internal")
+
+  # Rename levels
+  original_level <- lapply(model.frame(formula_orig, data = data)[,-1], FUN = function(x) levels(x))
+  internal_level <- list()
+  for(i in 1:length(original_level)){
+    internal_level[[i]] <- paste("x_", i, "_", seq(1:length(original_level[[i]])), "_x", sep = "")
+  }
+  names(internal_level) <- fac_name
+
+  # Rename data
+  data_orig <- data
+  for(i in 1:fac_size){
+    levels(data[,fac_name_orig[i]]) <- internal_level[[i]]
+  }
+  colnames(data)[match(all.vars(formula_orig), colnames(data))] <- c("Y", fac_name)
+
+  # Rename marginal_dist
+  marginal_dist_orig <- marginal_dist
+  for(z in 1:length(marginal_dist)){
+    for(i in 1:fac_size){
+      temp <- marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],]
+      temp$levels <- internal_level[[i]][match(temp$levels, original_level[[i]])]
+      temp$factor <- rename_fac[(i+1),2]
+      marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],] <- temp
+    }
+  }
+}
+
+
+
 
 factor_l <- length(all.vars(formula)[-1])
 combMat <- combn(factor_l,2); intNames <- c()
@@ -44,7 +80,7 @@ formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, coll
 formula_full
 
 
-exp_dist <- createDist(formula_u, data = data)
+
 
 coefInt["age44 years old:age60 years old"]
 coefInt["age60 years old:age44 years old"]
@@ -53,6 +89,13 @@ coefInt["fav_rating70%:fav_rating43%"]
 coefInt["fav_rating43%:fav_rating70%"]
 
 start_time <- Sys.time()
+
+formula_u <- Y ~ age + family + race + experience + trait + party +
+  policy_expertise + pos_security + pos_immigrants + pos_abortion +
+  pos_deficit + fav_rating + gender
+data <- dfOnoRep
+exp_dist <- createDist(formula_u, data = data)
+marginal_dist <- list(exp_dist)
 
 ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
                                 data = data,
@@ -64,6 +107,48 @@ ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
                                 type = "genlasso")
 
 ameOut_no1$AME
+ameOut_no1$boot_coef
+
+ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
+                                data = data,
+                                pair = TRUE, pair_id = data$pair_id,
+                                difference = FALSE,
+                                cluster = data$id, cross_int = TRUE,
+                                marginal_dist = exp_dist,
+                                marginal_type = "Exp",
+                                type = "No-Reg")
+
+ameOut_no2$AME
+ameOut_no2$boot_coef
+
+out1 <- do.call("rbind", ameOut_no1$AME)
+out2 <- do.call("rbind", ameOut_no2$AME)
+
+plot(out1$estimate, out2$estimate)
+abline(0, 1)
+
+names(ameOut_no1)
+out <- ameOut_no1
+## Name Back
+for(i in 1:length(out$AME)){
+  match_level <- match(out$AME[[i]]$level, internal_level[[out$AME[[i]]$factor[1]]])
+  out$AME[[i]]$factor <- rename_fac[,"original"][match(out$AME[[i]]$factor[1], rename_fac[,"internal"])]
+  orignal_use <- original_level[[out$AME[[i]]$factor[1]]]
+  out$AME[[i]]$level <- orignal_use[match_level]
+}
+names(out$AME) <- rename_fac[,"original"][match(names(out$AME), rename_fac[,"internal"])]
+for(i in 1:fac_size){
+  colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
+  for(j in 1:length(internal_level[[i]])){
+    colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
+  }
+}
+
+
+
+
+names(ameOut_no1$input)
+
 
 coef1 <- do.call("rbind", ameOut_no1$AME)
 std <- coef1[coef1$type ==  "STD",  ]

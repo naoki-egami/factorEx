@@ -1,4 +1,21 @@
-## Update on cross-profile interactions (06/05/2019)
+## Allow for three-way interactions (06/07/2019; done)
+# formula_full will include three-way interactions
+# change 1: Estimate AMEs from coefficients
+# change 2: Expand coefficients
+# Note: No need to change STD methods
+# (0) coefIntAME (need to allow for three)
+# (1) AME_estimate (need to allow for three) (coefIntAME, SE = TRUE)
+# (2) AME_fit (need to allow for three) (coefIntAME, SE = FALSE)
+# (3) coefMake (need to expand)
+# (4) .boot function  (need to modify formula_full)
+# (5) fit.after.collapse.gen (main; need to expand properly)
+
+## Update on naming rules within the function (06/07/2019; done)
+# only update AME_estiamte_full.R
+Check
+(1) formula (2) data (3) marginal_dist
+Need to bring them back
+(1) AME table (2) coef
 
 ###################
 # AME_fit_basic.R #
