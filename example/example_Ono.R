@@ -123,7 +123,7 @@ ameOut_no1$AME
 ameOut_no1$boot_coef
 
 ameOut_no12 <- AME_estimate_full(formula = as.formula(formula_u),
-                                 formula_three = ~ age*trait*race,
+                                 formula_three = ~ age*trait*race + fav_rating*age*pos_deficit,
                                  data = data,
                                  pair = TRUE, pair_id = data$pair_id,
                                  difference = FALSE,
@@ -150,7 +150,7 @@ ameOut_no2$AME
 ameOut_no2$boot_coef
 
 ameOut_no22 <- AME_estimate_full(formula = as.formula(formula_u),
-                                 formula_three = ~ age*trait*race,
+                                 formula_three = ~ age*trait*race + fav_rating*age*pos_deficit,
                                  data = data,
                                  pair = TRUE, pair_id = data$pair_id,
                                  difference = FALSE,
@@ -160,6 +160,7 @@ ameOut_no22 <- AME_estimate_full(formula = as.formula(formula_u),
                                  type = "No-Reg")
 
 ameOut_no22$AME
+ameOut_no22$Ftest
 ameOut_no22$boot_coef
 
 out1 <- do.call("rbind", ameOut_no1$AME)

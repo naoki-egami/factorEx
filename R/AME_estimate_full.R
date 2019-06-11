@@ -232,10 +232,15 @@ AME_estimate_full <- function(formula,
 
   ## Approximate F-test
   if(is.null(formula_three_c) == FALSE){
+    if(type != "No-Reg") coef_f <- apply(out$boot_coef, 2, mean)
+    if(type == "No-Reg") coef_f <- out$coef
+    data_u <- out$input$data
+
     Ftest <- Fthree(formula = formula,
-                    data = data,
+                    formula_three_c = formula_three_c,
+                    data = data_u,
                     pair = pair, cross_int = cross_int,
-                    out = out)
+                    coef_f = coef_f)
 
     out$Ftest <- as.numeric(Ftest)
   }

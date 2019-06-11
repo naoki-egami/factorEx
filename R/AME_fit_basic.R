@@ -379,9 +379,10 @@ AME.fit.STD.se <- function(formula,
 }
 
 Fthree <- function(formula,
-                    data,
-                    pair = FALSE, cross_int = TRUE,
-                    out){
+                   formula_three_c,
+                   data,
+                   pair = FALSE, cross_int = TRUE,
+                   coef_f){
 
 
   factor_l <- length(all.vars(formula)[-1])
@@ -429,7 +430,6 @@ Fthree <- function(formula,
     # base_name <- c("(Intercept)", colnames(X1))
 
   }else{
-    cluster_original <- data$cluster
     X <- model.matrix(formula_full, data=data)
     y <- model.frame(formula_full, data=data)[,1]
     # base_name <- colnames(X)
@@ -437,14 +437,16 @@ Fthree <- function(formula,
   }
 
   # Approximate F-test
-  coef_f <- apply(out$boot_coef, 2, mean)
   coef_order <- unlist(lapply(strsplit(names(coef_f), ":"), length))
   ind_three  <- which(coef_order == 3)
   R <-matrix(0, ncol = length(coef_f), nrow = length(ind_three))
   R[seq(1:length(ind_three)), ind_three] <- diag(length(ind_three))
   sigma2 <- sum((y - X%*%coef_f)^2)/(nrow(X) - ncol(X))
-  Ft <- t(R%*%coef_f)%*%solve(R%*%solve(t(X)%*%X)%*%t(R))%*%(R%*%coef_f)
+  Ft_n <- t(R%*%coef_f)%*%solve(R%*%solve(t(X)%*%X)%*%t(R))%*%(R%*%coef_f)
+  Ft_d <- sigma2*nrow(X)
+  Ft <- Ft_n/Ft_d
   pvalue <- pf(Ft, df1 = nrow(R), df2 = nrow(X) - ncol(X), lower.tail = FALSE)
+
   return(pvalue)
 }
 
