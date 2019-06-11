@@ -94,11 +94,8 @@ AME_estimate <- function(formula,
       data_cross0 <- model.matrix(as.formula(for_cross0), data = data_c)[,-1]
       sing <- 2*ncol(data_cross0)
       data_cross <- model.matrix(as.formula(for_cross), data = data_c)
-      ind_b_c <- attr(data_cross, "assign")[-1]
       data_cross <- data_cross[,-1]
       X_cross <- data_cross[, c((sing + 1): ncol(data_cross))]
-      colnames(X_cross) <- sub("_0c", "", colnames(X_cross))
-      ind_b_c <- ind_b_c[c((sing + 1): ncol(data_cross))]
 
       # modify X and ind_b
       X <- cbind(X, X_cross)
@@ -146,8 +143,8 @@ AME_estimate <- function(formula,
   # Estimate AMEs ----------
   ## Estimate AMEs from two-ways
   table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
-                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dit_u_list,
-                          marginal_dist_u_base = marginal_dist_u_base,
+                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
                           difference = difference, cross_int = cross_int)
 
   # table_AME <- c()

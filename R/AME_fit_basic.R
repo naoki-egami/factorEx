@@ -76,8 +76,8 @@ AME.fit <- function(formula_full,
   # Estimate AMEs ----------
   # Estimeate AME from two-ways
   table_AME <- coefIntAME(coefInt = coefInt, vcovInt = NULL, SE = FALSE,
-                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dit_u_list,
-                          marginal_dist_u_base = marginal_dist_u_base,
+                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
                           difference = difference, cross_int = cross_int)
   # table_AME <- c()
   # for(m in 1:nrow(marginal_dist_u_base)){
@@ -133,7 +133,8 @@ AME.fit <- function(formula_full,
   return(out)
 }
 
-coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dist_u_list, marginal_dist_u_base, difference, cross_int){
+coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dist_u_list, marginal_dist_u_base,
+                       marginal_type, difference, cross_int){
 
   # Estimate AMEs ----------
   table_AME <- c()
@@ -346,6 +347,9 @@ AME.fit.STD.se <- function(formula,
   return(table_AME)
 }
 
+# Help functions
+
+# 1. Cluster standard errors
 cluster_se_glm <- function(model, cluster){
 
   #  Drop unused cluster indicators, if cluster var is a factor

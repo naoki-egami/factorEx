@@ -237,10 +237,12 @@ AME_estimate_full <- function(formula,
     }
     names(out$AME) <- rename_fac[,"original"][match(names(out$AME), rename_fac[,"internal"])]
     # coefficients
-    for(i in 1:fac_size){
-      colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
-      for(j in 1:length(internal_level[[i]])){
-        colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
+    if(type != "No-Reg"){
+      for(i in 1:fac_size){
+        colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
+        for(j in 1:length(internal_level[[i]])){
+          colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
+        }
       }
     }
   }
