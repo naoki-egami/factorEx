@@ -144,56 +144,62 @@ AME_estimate <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   # Estimate AMEs ----------
-  table_AME <- c()
-  for(m in 1:nrow(marginal_dist_u_base)){
-    coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
-    vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
-                          grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
-    if(length(coef_focus) > 0){
-      estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
-      estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+  ## Estimate AMEs from two-ways
+  table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
+                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dit_u_list,
+                          marginal_dist_u_base = marginal_dist_u_base,
+                          difference = difference, cross_int = cross_int)
 
-      if(cross_int == TRUE){
-        estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
-                        marginal_dist[[1]]$factor[m], estNames)
-      }
-
-      table_AME_m <- c()
-      # For each marginal distribution,
-      for(z in 1:length(marginal_dist)){
-        marginal_dist_u <- marginal_dist_u_list[[z]]
-        # Find weights
-        coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
-        # Compute AMEs
-        coef_AME <- sum(coef_focus * coef_prop)
-        se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
-        AME <- data.frame(matrix(NA, ncol = 0, nrow=1))
-        AME$type <- marginal_type[z]
-        AME$factor   <- marginal_dist[[z]][m,1]; AME$level <- marginal_dist[[z]][m,2]
-        AME$estimate <- coef_AME; AME$se <- se_AME
-        table_AME_m <- rbind(table_AME_m, AME)
-      }
-      if(difference == TRUE){
-        for(z in 2:length(marginal_dist)){
-          marginal_dist_u <- marginal_dist_u_list[[z]]
-          # Find weights
-          coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
-          coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
-          # Compute AMEs
-          coef_prop_d <- (coef_prop - coef_prop0)
-          coef_AME_dif <- sum(coef_focus * coef_prop_d)
-          se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
-          AME_dif <- data.frame(matrix(NA, ncol = 0, nrow=1))
-          AME_dif$type <- paste(marginal_type[z],"-",marginal_type[1],sep="")
-          AME_dif$factor   <- marginal_dist[[z]][m,1]; AME_dif$level <- marginal_dist[[z]][m,2]
-          AME_dif$estimate <- coef_AME_dif; AME_dif$se <- se_AME_dif
-          table_AME_m <- rbind(table_AME_m, AME_dif)
-        }
-      }
-      table_AME <- rbind(table_AME, table_AME_m)
-    }
-  }
-  colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
+  # table_AME <- c()
+  # for(m in 1:nrow(marginal_dist_u_base)){
+  #   coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
+  #   vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+  #                         grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+  #   if(length(coef_focus) > 0){
+  #     estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
+  #     estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+  #
+  #     if(cross_int == TRUE){
+  #       estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
+  #                       marginal_dist[[1]]$factor[m], estNames)
+  #     }
+  #
+  #     table_AME_m <- c()
+  #     # For each marginal distribution,
+  #     for(z in 1:length(marginal_dist)){
+  #       marginal_dist_u <- marginal_dist_u_list[[z]]
+  #       # Find weights
+  #       coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+  #       # Compute AMEs
+  #       coef_AME <- sum(coef_focus * coef_prop)
+  #       se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
+  #       AME <- data.frame(matrix(NA, ncol = 0, nrow=1))
+  #       AME$type <- marginal_type[z]
+  #       AME$factor   <- marginal_dist[[z]][m,1]; AME$level <- marginal_dist[[z]][m,2]
+  #       AME$estimate <- coef_AME; AME$se <- se_AME
+  #       table_AME_m <- rbind(table_AME_m, AME)
+  #     }
+  #     if(difference == TRUE){
+  #       for(z in 2:length(marginal_dist)){
+  #         marginal_dist_u <- marginal_dist_u_list[[z]]
+  #         # Find weights
+  #         coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+  #         coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
+  #         # Compute AMEs
+  #         coef_prop_d <- (coef_prop - coef_prop0)
+  #         coef_AME_dif <- sum(coef_focus * coef_prop_d)
+  #         se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
+  #         AME_dif <- data.frame(matrix(NA, ncol = 0, nrow=1))
+  #         AME_dif$type <- paste(marginal_type[z],"-",marginal_type[1],sep="")
+  #         AME_dif$factor   <- marginal_dist[[z]][m,1]; AME_dif$level <- marginal_dist[[z]][m,2]
+  #         AME_dif$estimate <- coef_AME_dif; AME_dif$se <- se_AME_dif
+  #         table_AME_m <- rbind(table_AME_m, AME_dif)
+  #       }
+  #     }
+  #     table_AME <- rbind(table_AME, table_AME_m)
+  #   }
+  # }
+  # colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
 
   # Combine STD estimate
   table_STD <- AME.fit.STD.se(formula = formula,

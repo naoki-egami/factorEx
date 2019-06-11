@@ -97,7 +97,7 @@ AME_estimate_collapse_genlasso <- function(formula,
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
-  # base
+  # base (just keep track of names)
   fitAME_base <- AME.fit(formula = formula,
                          data = data, pair = pair, cross_int = cross_int,
                          marginal_dist = marginal_dist,
