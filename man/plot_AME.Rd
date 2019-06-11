@@ -4,7 +4,9 @@
 \alias{plot_AME}
 \title{Estimating PAMCE withithout regularization}
 \usage{
-plot_AME(outAME, factor_name, level_name, type, marginal_diff, mar = 8)
+plot_AME(ame.out, factor_name, col, pch, legend_pos = "topright",
+  plot_difference = "both", main = "AMEs", xlim, mar, cex = 1,
+  plot_type, plot_name)
 }
 \arguments{
 \item{formula}{formula}

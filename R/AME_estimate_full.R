@@ -4,7 +4,7 @@
 #' @param type "No-Reg", "gash-anova", or "genlasso"
 #' @param ord.fac whether we assume each factor is ordered. When not specified, we assume all of them are ordered.
 #' @param pair whether we use the paired-conjoint design
-#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @param cross_int include interactions across profiles
 #' @param cluster id for cluster
 #' @param marginal_dist marginal distributions
 #' @param marginal_type names of marginal distributions
@@ -28,7 +28,7 @@ AME_estimate_full <- function(formula,
                               data,
                               type = "genlasso",
                               ord.fac,
-                              pair = FALSE, pair_id = NULL,
+                              pair = FALSE, pair_id = NULL, cross_int = TRUE,
                               cluster = NULL,
                               marginal_dist,
                               marginal_type,
@@ -70,6 +70,15 @@ AME_estimate_full <- function(formula,
   if(pair==TRUE & all(table(pair_id)==2)==FALSE){
     stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
   }
+  if(pair == FALSE){
+    cross_int <- FALSE
+  }
+  # if(is.null(pair_var) == FALSE){
+  #   if(all(is.element(pair_var, all.vars(formula))) == FALSE){
+  #     stop(" 'pair_var' should be variables listed in 'formula' ")}
+  #   if(pair == FALSE){
+  #     stop(" 'pair_var' is ignored when 'pair=FALSE' ")}
+  # }
   if(difference==TRUE & length(marginal_type) < 2){
     stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
   }
@@ -112,7 +121,7 @@ AME_estimate_full <- function(formula,
                                                                     2, function(x) mean(x)) == 0]
 
   rest_level <- unlist(strsplit(rest_name, ":"))
-  baseline <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[1])
+  baseline <- baseline_orig <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[1])
   basenames <- paste(all.vars(formula)[-1], unlist(baseline), sep = "")
   rest_base <- basenames[is.element(basenames, rest_level)]
   rest_fac  <- all.vars(formula)[-1][is.element(basenames, rest_level)]
@@ -126,10 +135,50 @@ AME_estimate_full <- function(formula,
       stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
   }
 
+  # ############
+  # Renaming
+  # ############
+  {
+    # Rename formula
+    formula_orig <- formula
+    fac_size <- length(all.vars(formula)[-1])
+    fac_name_orig <- all.vars(formula)[-1]
+    fac_name <- paste("f_", seq(1:fac_size), "_f", sep = "")
+    formula  <- as.formula(paste("Y ~", paste(fac_name, collapse = "+"), sep = ""))
+    rename_fac <- cbind(all.vars(formula_orig), c("Y", fac_name))
+    colnames(rename_fac) <- c("original", "internal")
+
+    # Rename levels
+    original_level <- lapply(model.frame(formula_orig, data = data)[,-1], FUN = function(x) levels(x))
+    internal_level <- list()
+    for(i in 1:length(original_level)){
+      internal_level[[i]] <- paste("x_", i, "_", seq(1:length(original_level[[i]])), "_x", sep = "")
+    }
+    names(internal_level) <- fac_name
+
+    # Rename data
+    data_orig <- data
+    for(i in 1:fac_size){
+      levels(data[,fac_name_orig[i]]) <- internal_level[[i]]
+    }
+    colnames(data)[match(all.vars(formula_orig), colnames(data))] <- c("Y", fac_name)
+
+    # Rename marginal_dist
+    marginal_dist_orig <- marginal_dist
+    for(z in 1:length(marginal_dist)){
+      for(i in 1:fac_size){
+        temp <- marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],]
+        temp$levels <- internal_level[[i]][match(temp$levels, original_level[[i]])]
+        temp$factor <- rename_fac[(i+1),2]
+        marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],] <- temp
+      }
+    }
+  }
+
   if(type == "No-Reg"){
     out <-  AME_estimate(formula = formula,
                          data = data,
-                         pair = pair, pair_id = pair_id,
+                         pair = pair, pair_id = pair_id, cross_int = cross_int,
                          cluster = cluster,
                          marginal_dist = marginal_dist,
                          marginal_type = marginal_type,
@@ -157,7 +206,7 @@ AME_estimate_full <- function(formula,
     out <- AME_estimate_collapse_genlasso(formula = formula,
                                           data = data,
                                           ord.fac = ord.fac,
-                                          pair = pair, pair_id = pair_id,
+                                          pair = pair, pair_id = pair_id, cross_int = cross_int,
                                           cluster = cluster,
                                           marginal_dist = marginal_dist,
                                           marginal_type = marginal_type,
@@ -169,5 +218,34 @@ AME_estimate_full <- function(formula,
                                           numCores = numCores,
                                           seed = seed)
   }
+
+  # ##############
+  # Name back
+  # ##############
+  {
+    out$input$formula <- formula_orig
+    out$input$data <- data_orig
+    out$input$marginal_dist <- marginal_dist_orig
+    out$baseline <- baseline_orig
+
+    # AME
+    for(i in 1:length(out$AME)){
+      match_level <- match(out$AME[[i]]$level, internal_level[[out$AME[[i]]$factor[1]]])
+      out$AME[[i]]$factor <- rename_fac[,"original"][match(out$AME[[i]]$factor[1], rename_fac[,"internal"])]
+      orignal_use <- original_level[[out$AME[[i]]$factor[1]]]
+      out$AME[[i]]$level <- orignal_use[match_level]
+    }
+    names(out$AME) <- rename_fac[,"original"][match(names(out$AME), rename_fac[,"internal"])]
+    # coefficients
+    if(type != "No-Reg"){
+      for(i in 1:fac_size){
+        colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
+        for(j in 1:length(internal_level[[i]])){
+          colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
+        }
+      }
+    }
+  }
+
   return(out)
 }

@@ -8,7 +8,7 @@
 
 AME.fit <- function(formula_full,
                     data,
-                    pair=FALSE,
+                    pair = FALSE, cross_int = TRUE,
                     marginal_dist,
                     marginal_dist_u_list,
                     marginal_dist_u_base,
@@ -22,12 +22,37 @@ AME.fit <- function(formula_full,
     data2 <- data0[side==0,]
     cluster_original <- data$cluster
     cluster <- data$cluster[side==1]
+
+    # incorporate cross-profile interactions
     X1 <- model.matrix(formula_full, data=data1)
-    X2 <- model.matrix(formula_full, data=data2)
-    X <- cbind(1, X1[,-1] - X2[,-1])
+    ind_b <- attr(X1, "assign")
+    X1  <- X1[,-1]
+    X2 <- model.matrix(formula_full, data=data2)[ ,-1]
+    X <- cbind(1, X1 - X2)
+
+    if(cross_int == TRUE){
+
+      base_fac <- all.vars(formula_full)[-1]
+      data2_u <- data2[,base_fac]; colnames(data2_u) <- paste(base_fac,"_rp",sep="")
+      data_c <- cbind(data1[,base_fac], data2_u)
+      for_cross <- paste("~", paste(paste(base_fac, paste(base_fac,"_rp",sep=""), sep="*"),
+                                    collapse = "+"))
+      for_cross0 <- paste("~", paste(base_fac, collapse = "+"))
+      data_cross0 <- model.matrix(as.formula(for_cross0), data = data_c)[,-1]
+      sing <- 2*ncol(data_cross0)
+      data_cross <- model.matrix(as.formula(for_cross), data = data_c)
+      ind_b_c <- attr(data_cross, "assign")[-1]
+      data_cross <- data_cross[,-1]
+      X_cross <- data_cross[, c((sing + 1): ncol(data_cross))] # don't need to rename
+      ind_b_c <- ind_b_c[c((sing + 1): ncol(data_cross))]
+
+      # modify X and ind_b
+      X <- cbind(X, X_cross)
+      ind_b <- c(ind_b, ind_b_c - min(ind_b_c) + 1 + max(ind_b))
+    }
     y <- model.frame(formula_full, data=data1)[ ,1]
     # base_name <- c("(Intercept)", colnames(X1))
-    ind_b <- attr(X1, "assign")
+
   }else{
     cluster_original <- data$cluster
     X <- model.matrix(formula_full, data=data)
@@ -39,7 +64,7 @@ AME.fit <- function(formula_full,
 
   # Fit the model ----------
   main_lm <- lm(y ~ X - 1)
-  coefInt <- coef(main_lm)
+  coefInt <- coef(main_lm)  ## this includes intercept
   # coefInt <- coefInt[is.na(coefInt) == FALSE]
   coefInt[is.na(coefInt) == TRUE] <- 0 ## Insert 0 to non-existing pairs
   base_name <- sub("X", "", names(coefInt))
@@ -49,14 +74,85 @@ AME.fit <- function(formula_full,
   # colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
   # Estimate AMEs ----------
+  # Estimeate AME from two-ways
+  table_AME <- coefIntAME(coefInt = coefInt, vcovInt = NULL, SE = FALSE,
+                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                          difference = difference, cross_int = cross_int)
+  # table_AME <- c()
+  # for(m in 1:nrow(marginal_dist_u_base)){
+  #   coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
+  #   # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+  #   #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+  #   if(length(coef_focus) > 0){
+  #     estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
+  #     estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+  #     if(cross_int == TRUE){
+  #       estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
+  #                       marginal_dist[[1]]$factor[m], estNames)
+  #     }
+  #     table_AME_m <- c()
+  #     # For each marginal distribution,
+  #     for(z in 1:length(marginal_dist_u_list)){
+  #       marginal_dist_u <- marginal_dist_u_list[[z]]
+  #       # Find weights
+  #       coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+  #       # Compute AMEs
+  #       coef_AME <- sum(coef_focus * coef_prop)
+  #       # se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
+  #       AME <- data.frame(matrix(NA, ncol = 0, nrow=1))
+  #       AME$type <- marginal_type[z]
+  #       AME$factor   <- marginal_dist[[z]][m,1]; AME$level <- marginal_dist[[z]][m,2]
+  #       AME$estimate <- coef_AME;
+  #       # AME$se <- se_AME
+  #       table_AME_m <- rbind(table_AME_m, AME)
+  #     }
+  #     if(difference == TRUE){
+  #       for(z in 2:length(marginal_dist_u_list)){
+  #         marginal_dist_u <- marginal_dist_u_list[[z]]
+  #         # Find weights
+  #         coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+  #         coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
+  #         # Compute AMEs
+  #         coef_prop_d <- (coef_prop - coef_prop0)
+  #         coef_AME_dif <- sum(coef_focus * coef_prop_d)
+  #         # se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
+  #         AME_dif <- data.frame(matrix(NA, ncol = 0, nrow=1))
+  #         AME_dif$type <- paste(marginal_type[z],"-",marginal_type[1],sep="")
+  #         AME_dif$factor   <- marginal_dist[[z]][m,1]; AME_dif$level <- marginal_dist[[z]][m,2]
+  #         AME_dif$estimate <- coef_AME_dif;
+  #         # AME_dif$se <- se_AME_dif
+  #         table_AME_m <- rbind(table_AME_m, AME_dif)
+  #       }
+  #     }
+  #     table_AME <- rbind(table_AME, table_AME_m)
+  #   }
+  # }
+  # colnames(table_AME) <- c("type", "factor", "level", "estimate")
+  out <- list("table_AME" = table_AME, "coef" = coefInt, "ind_b" = ind_b)
+  return(out)
+}
+
+coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dist_u_list, marginal_dist_u_base,
+                       marginal_type, difference, cross_int){
+
+  # Estimate AMEs ----------
   table_AME <- c()
   for(m in 1:nrow(marginal_dist_u_base)){
     coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
-    # vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
-    #                       grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+    if(SE == TRUE){
+      vcov_focus <- vcovInt[grep(marginal_dist_u_base$level[m], rownames(vcovInt), fixed = T),
+                            grep(marginal_dist_u_base$level[m], colnames(vcovInt), fixed = T)]
+    }
     if(length(coef_focus) > 0){
       estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", names(coef_focus), fixed = T)
       estNames <- gsub(paste(":", names(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+
+      if(cross_int == TRUE){
+        estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
+                        marginal_dist[[1]]$factor[m], estNames)
+      }
+
       table_AME_m <- c()
       # For each marginal distribution,
       for(z in 1:length(marginal_dist_u_list)){
@@ -65,12 +161,12 @@ AME.fit <- function(formula_full,
         coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
         # Compute AMEs
         coef_AME <- sum(coef_focus * coef_prop)
-        # se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
+        if(SE == TRUE) se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
         AME <- data.frame(matrix(NA, ncol = 0, nrow=1))
         AME$type <- marginal_type[z]
         AME$factor   <- marginal_dist[[z]][m,1]; AME$level <- marginal_dist[[z]][m,2]
         AME$estimate <- coef_AME;
-        # AME$se <- se_AME
+        if(SE == TRUE) AME$se <- se_AME
         table_AME_m <- rbind(table_AME_m, AME)
       }
       if(difference == TRUE){
@@ -82,12 +178,12 @@ AME.fit <- function(formula_full,
           # Compute AMEs
           coef_prop_d <- (coef_prop - coef_prop0)
           coef_AME_dif <- sum(coef_focus * coef_prop_d)
-          # se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
+          if(SE == TRUE) se_AME_dif <- sqrt(coef_prop_d%*%vcov_focus%*%coef_prop_d)
           AME_dif <- data.frame(matrix(NA, ncol = 0, nrow=1))
           AME_dif$type <- paste(marginal_type[z],"-",marginal_type[1],sep="")
           AME_dif$factor   <- marginal_dist[[z]][m,1]; AME_dif$level <- marginal_dist[[z]][m,2]
           AME_dif$estimate <- coef_AME_dif;
-          # AME_dif$se <- se_AME_dif
+          if(SE == TRUE) AME_dif$se <- se_AME_dif
           table_AME_m <- rbind(table_AME_m, AME_dif)
         }
       }
@@ -95,12 +191,12 @@ AME.fit <- function(formula_full,
     }
   }
   colnames(table_AME) <- c("type", "factor", "level", "estimate")
-  out <- list("table_AME" = table_AME, "coef" = coefInt, "ind_b" = ind_b)
-  return(out)
+  if(SE == TRUE) colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
+  return(table_AME)
 }
 
 
-
+# Functions don't explicitly model two-way interactions
 AME.fit.STD <- function(formula,
                         data,
                         pair=FALSE,
@@ -114,9 +210,24 @@ AME.fit.STD <- function(formula,
     data2 <- data0[side==0,]
     cluster_original <- data$cluster
     cluster <- data$cluster[side==1]
+
+    # if(is.null(pair_var) == TRUE){
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+    # }else{
+    #   Xf <- model.frame(formula, data=data1)
+    #   Xf_o <- as.numeric(attr(terms(Xf), "order") == 1) + 1
+    #   Xf <- attr(terms(Xf), "factors")
+    #   Xf_ind <- which(apply(t(t(matrix(Xf[pair_var, ], ncol = ncol(Xf))*Xf_o)), 2, sum)  == 2)
+    #   X01 <- model.matrix(formula, data=data1)
+    #   X02 <- model.matrix(formula, data=data2)
+    #   pair_var_ind <- is.element(attr(X01, "assign"), Xf_ind)
+    #   X0 <- X01 - X02
+    #   X0[, pair_var_ind == TRUE] <- X01[, pair_var_ind == TRUE]
+    #   X <- cbind(1, X0[,-1])
+    # }
+
     y <- model.frame(formula,data=data1)[ ,1]
     # base_name <- c("(Intercept)", colnames(X1))
   }else{
@@ -158,6 +269,8 @@ AME.fit.STD <- function(formula,
   return(table_AME)
 }
 
+
+
 AME.fit.STD.se <- function(formula,
                            data,
                            pair = FALSE,
@@ -171,9 +284,28 @@ AME.fit.STD.se <- function(formula,
     data2 <- data0[side==0,]
     cluster_original <- data$cluster
     cluster <- data$cluster[side==1]
+
     X1 <- model.matrix(formula, data=data1)[ ,-1]
     X2 <- model.matrix(formula, data=data2)[ ,-1]
     X <- cbind(1, X1 - X2)
+
+    # if(is.null(pair_var) == TRUE){
+    #   X1 <- model.matrix(formula, data=data1)[ ,-1]
+    #   X2 <- model.matrix(formula, data=data2)[ ,-1]
+    #   X <- cbind(1, X1 - X2)
+    # }else{
+    #   Xf <- model.frame(formula, data=data1)
+    #   Xf_o <- as.numeric(attr(terms(Xf), "order") == 1) + 1
+    #   Xf <- attr(terms(Xf), "factors")
+    #   Xf_ind <- which(apply(t(t(matrix(Xf[pair_var, ], ncol = ncol(Xf))*Xf_o)), 2, sum)  == 2)
+    #   X01 <- model.matrix(formula, data=data1)
+    #   X02 <- model.matrix(formula, data=data2)
+    #   pair_var_ind <- is.element(attr(X01, "assign"), Xf_ind)
+    #   X0 <- X01 - X02
+    #   X0[, pair_var_ind == TRUE] <- X01[, pair_var_ind == TRUE]
+    #   X <- cbind(1, X0[,-1])
+    # }
+
     y <- model.frame(formula,data=data1)[ ,1]
     # base_name <- c("(Intercept)", colnames(X1))
   }else{
@@ -215,6 +347,9 @@ AME.fit.STD.se <- function(formula,
   return(table_AME)
 }
 
+# Help functions
+
+# 1. Cluster standard errors
 cluster_se_glm <- function(model, cluster){
 
   #  Drop unused cluster indicators, if cluster var is a factor
@@ -239,32 +374,6 @@ cluster_se_glm <- function(model, cluster){
   rcse.cov <- dfc * sandwich(model, meat. = crossprod(uj)/N)
   return(rcse.cov)
 }
-
-cluster_se_glm <- function(model, cluster){
-
-  #  Drop unused cluster indicators, if cluster var is a factor
-  if (class(cluster) == "factor") {
-    cluster <- droplevels(cluster)
-  }
-
-  if (nrow(model.matrix(model)) != length(cluster)) {
-    stop("check your data: cluster variable has different N than model - you may have observations with missing data")
-  }
-
-  M <- length(unique(cluster))
-  N <- length(cluster)
-  K <- model$rank
-
-  ## if(M<50) {
-  ##     warning("Fewer than 50 clusters, variances may be unreliable (could try block bootstrap instead).")
-  ## }
-
-  dfc <- (M/(M - 1)) * ((N - 1)/(N - K))
-  uj  <- apply(estfun(model), 2, function(x) tapply(x, cluster, sum));
-  rcse.cov <- dfc * sandwich(model, meat. = crossprod(uj)/N)
-  return(rcse.cov)
-}
-
 
 #' Estimating PAMCE withithout regularization
 #' @param formula formula
@@ -280,6 +389,7 @@ AME_from_boot <- function(outAME, difference = FALSE){
   marginal_dist_u_base  <- outAME$input$marginal_dist_u_base
   marginal_type  <- outAME$input$marginal_type
 
+  cross_int <- outAME$cross_int
   boot_coef <- outAME$boot_coef
 
   # Estimate AMEs ----------
@@ -291,6 +401,11 @@ AME_from_boot <- function(outAME, difference = FALSE){
     if(length(coef_focus) > 0){
       estNames <- gsub(paste(marginal_dist_u_base$level[m], ":", sep = ""), "", colnames(coef_focus), fixed = T)
       estNames <- gsub(paste(":", colnames(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+
+      if(cross_int == TRUE){
+        estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""), marginal_dist[[1]]$factor[m], estNames)
+      }
+
       table_AME_m <- c()
       # For each marginal distribution,
       for(z in 1:length(marginal_dist_u_list)){
@@ -353,6 +468,8 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
   formula <- outAME$input$formula
   data    <- outAME$input$data
 
+  cross_int <- outAME$input$cross_int
+
   leveluse <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[-1])
   leveluse_all <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x))
 
@@ -369,18 +486,30 @@ cAME_from_boot <- function(outAME, factor_name, level_name, difference = TRUE){
   }
 
   factor_all <- all.vars(formula)[-1]
-  part_pos <- lapply(leveluse[!(names(leveluse) %in% factor_name)], length)
+  if(cross_int == TRUE){
+    part_pos <- append(lapply(leveluse[!(names(leveluse) %in% factor_name)], length), length(leveluse[[factor_name]]))
+    names(part_pos)[length(part_pos)] <- factor_name
+    leveluse_all_b <- append(leveluse_all[!(names(leveluse_all) %in% factor_name)], leveluse_all[factor_name])
+  }else{
+    part_pos <- lapply(leveluse[!(names(leveluse) %in% factor_name)], length)
+    leveluse_all_b <- leveluse_all[!(names(leveluse_all) %in% factor_name)]
+  }
   end_pos   <- cumsum(part_pos) + 1
   start_pos <- c(2, end_pos[-length(end_pos)] + 1)
 
   estNames <- gsub(paste(effect_name, ":", sep = ""), "", colnames(coef_focus), fixed = T)
   estNames <- gsub(paste(":", effect_name, sep = ""), "", estNames, fixed = T)
 
+  if(cross_int == TRUE){
+    estNames <- sub(paste(factor_name,"_rp", sep = ""), factor_name, estNames)
+  }
+
+
   # Estimate Conditional AMEs
   table_cAME <- table_cProp <- c()
-  for(m in 1:(length(factor_all) - 1)){
+  for(m in 1:length(part_pos)){
     ind_focus_mat <- matrix(1, ncol = (as.numeric(part_pos[m][1]) + 1), nrow = ncol(coef_focus))
-    leveluse_focus <- leveluse_all[!(names(leveluse_all) %in% factor_name)][m]
+    leveluse_focus <- leveluse_all_b[m]
     leveluse_name  <- paste(names(leveluse_focus), unlist(leveluse_focus), sep="")
     table_cAME_m <- table_cProp_m <- c()
     # For each marginal distribution,
@@ -718,6 +847,7 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
   marginal_dist_u_list  <- outAME$input$marginal_dist_u_list
   marginal_dist_u_base  <- outAME$input$marginal_dist_u_base
   marginal_type  <- outAME$input$marginal_type
+  cross_int <- outAME$input$cross_int
 
   if(all(is.element(marginal_diff, marginal_type)) == FALSE){
     stop("`marginal_diff` can only take names in `marginal_type` specified in `AME_estimate_full.`")
@@ -735,6 +865,11 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
   }
   estNames <- gsub(paste(use_name, ":", sep = ""), "", colnames(coef_focus), fixed = T)
   estNames <- gsub(paste(":", colnames(coef_focus)[1], sep = ""), "", estNames, fixed = T)
+
+  if(cross_int == TRUE){
+    estNames <- sub(paste(factor_name,"_rp", sep = ""), factor_name, estNames)
+  }
+
   table_AME_diff <- c()
   # For each marginal distribution,
   ind1 <- which(marginal_type == marginal_diff[1])
@@ -748,6 +883,7 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
   # all(marginal_dist_u1$fac == marginal_dist_u2$fac) ## Check
 
   marginal_factor <- setdiff(unique(marginal_dist_u1$fac), factor_name)
+  if(cross_int == TRUE) marginal_factor <- c(marginal_factor, factor_name)
   base_mar1 <- marginal_dist_u1[match(estNames, marginal_dist_u1[, "level"]), ]
   base_mar2 <- marginal_dist_u2[match(estNames, marginal_dist_u2[, "level"]), ]
 
@@ -787,12 +923,14 @@ decompose_AME <- function(outAME, factor_name, level_name, marginal_diff = c("Po
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
 #' @export
 
-plot_AME <- function(outAME, factor_name, level_name, type,
+plot_decompose <- function(outAME, factor_name, level_name, type = "decompose",
                      marginal_diff, mar = 8){
 
   if(is.element(type, c("decompose", "diagnostics")) == FALSE){
     stop("type should be `decompose` or `diagnostics.`")
   }
+
+  cross_int <- outAME$input$cross_int
 
 
   if(type == "decompose"){
@@ -805,7 +943,8 @@ plot_AME <- function(outAME, factor_name, level_name, type,
       }
     }
 
-    dec_tab <- decompose_AME(outAME = outAME, factor_name = factor_name, level_name = level_name,
+    dec_tab <- decompose_AME(outAME = outAME, factor_name = factor_name,
+                             level_name = level_name,
                              marginal_diff = marginal_diff)
 
     point <- rev(dec_tab[,3])
@@ -818,17 +957,229 @@ plot_AME <- function(outAME, factor_name, level_name, type,
     par(mar = c(4, mar, 6, 4))
     plot(point, seq(1:nrow(dec_tab)), pch = 19, ylim = c(0.5, nrow(dec_tab)+0.5), yaxt = "n",
         xlim = c(xmin, xmax), ylab =  "", xlab = "Change in Popuation AMCE",
-        main = paste("Decompose Change in Popolation AMCE:\n", unique(dec_tab$type), sep =""))
+        main = paste("Decompose Change in Population AMCE:\n", unique(dec_tab$type), sep =""))
     segments(low, seq(1:nrow(dec_tab)), high, seq(1:nrow(dec_tab)), lwd = 2)
     abline(v = 0, lty = 2)
     Axis(side = 2, at = seq(1:nrow(dec_tab)), labels = fac_name_p, las = 1)
   }
+}
 
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
+
+plot_AME <- function(ame.out,
+                     factor_name,
+                     col, pch,
+                     legend_pos = "topright",
+                     plot_difference = "both",
+                     main = "AMEs", xlim,
+                     mar, cex = 1,
+                     plot_type,
+                     plot_name){
+
+  if(all(is.element(factor_name, names(ame.out$AME))) == FALSE){
+    stop(" 'factor_name' can only take a subset of factors estimated in 'AME.estimate'")
+  }
+  if(missing(col)){
+    col <- rep("black",length(unique(ame.out$AME[[1]]$type)))
+  }
+  if(missing(pch)){
+    pch <- rep(19,length(unique(ame.out$AME[[1]]$type)))
+  }
+  if(missing(mar)){
+    mar <- 12
+  }
+  if(ame.out$input$difference == FALSE & plot_difference == "only"){
+    stop(" 'AME.estiamte' should take `difference = TRUE` to plot their estimates")
+  }
+  if(missing(plot_name)) plot_name <- plot_type
+  type_difference <- ame.out$type_difference
+
+  ## Correct all esimates ----------
+  p_coef_full <- p_high_full <- p_low_full <- c()
+  p_name_full <- p_name_f_full <- p_col_full <- p_pch_full <- c()
+  for(g in 1:length(factor_name)){
+    p_AME  <- ame.out$AME[[factor_name[g]]]
+    p_AME <- p_AME[order(factor(p_AME$level, levels = unique(p_AME$level))),] # updated on 12/27 (Naoki)
+
+    if(plot_difference == "both"){p_AME  <- p_AME}
+    if(plot_difference == "no"){p_AME   <- p_AME[(p_AME$type %in% type_difference) == FALSE, ]}
+    if(plot_difference == "only"){p_AME  <- p_AME[(p_AME$type %in% type_difference) == TRUE, ]}
+
+    if(missing(plot_type) == FALSE){
+      p_AME  <- p_AME[(p_AME$type %in% plot_type) == TRUE, ]
+      p_AME  <- p_AME[order(factor(p_AME$level, levels = unique(p_AME$level)),
+                            factor(p_AME$type, levels = plot_type)),]
+    }
+
+    p_coef <- c(NA, p_AME$estimate)
+    p_se   <- c(NA, p_AME$se)
+    p_high <- p_coef + 1.96*p_se
+    p_low  <- p_coef - 1.96*p_se
+    p_name_t <- paste(factor_name[g], " (", ame.out$baseline[factor_name[g]], "):   ", sep="")
+    p_name_b   <- p_AME$level
+    p_name_b[p_AME$type != p_AME$type[1]] <- ""
+    p_name_f <- c(p_name_t, rep("", length(p_name_b)))
+    p_name   <- c("", p_name_b)
+    p_col  <- c(NA, rep(col, length(unique(p_AME$level))))
+    p_pch  <- c(NA, rep(pch, length(unique(p_AME$level))))
+
+    ## Store values
+    p_coef_full <- c(p_coef_full, p_coef)
+    p_high_full <- c(p_high_full, p_high)
+    p_low_full  <- c(p_low_full, p_low)
+    p_name_f_full <- c(p_name_f_full, p_name_f)
+    p_name_full <- c(p_name_full, p_name)
+    p_col_full  <- c(p_col_full, p_col)
+    p_pch_full  <- c(p_pch_full, p_pch)
+  }
+
+  ## Plot Setup ----------
+  p_type <- unique(p_AME$type)
+  if(missing(plot_type) == FALSE) p_type <- plot_type
+  if(missing(xlim)){
+    p_x <- c(min(p_low_full, na.rm=TRUE), max(p_high_full, na.rm = TRUE))
+  }else{
+    p_x <- xlim
+  }
+
+  ## Plot ----------
+  par(mar=c(4,mar,4,2))
+  plot(rev(p_coef_full), seq(1:length(p_coef_full)), pch=rev(p_pch_full),
+       yaxt="n", ylab = "", main = main, xlim = p_x,
+       xlab = "Estimated Effects", col = rev(p_col_full))
+  segments(rev(p_low_full), seq(1:length(p_coef_full)),
+           rev(p_high_full), seq(1:length(p_coef_full)),
+           col = rev(p_col_full))
+  Axis(side=2, at = seq(1:length(p_name_full)), labels=rev(p_name_full),
+       las=1, font = 1, tick=F, cex.axis = cex)
+  Axis(side=2, at = seq(1:length(p_name_full)), labels=rev(p_name_f_full),
+       las=1, font = 2, tick=F, cex.axis = cex)
+  abline(v=0, lty=2)
+  if(is.character(legend_pos[1])==TRUE) legend(legend_pos, plot_name, col= col, pch = pch)
+  if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                plot_name, col= col, pch = pch)
+}
+
+#' Estimating PAMCE withithout regularization
+#' @param formula formula
+#' @param data data
+#' @param pair whether we use the paired-conjoint design
+#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @export
+
+plot_dist <- function(factor_name,
+                      marginal_dist, marginal_type,
+                      main = "Marginal Distibution",
+                      col, pch, mar,
+                      legend_pos = "topright",
+                      cex){
+
+  if(is.list(marginal_dist)==FALSE){
+    stop("marginal_dist should be 'list'.")
+  }
+
+  marginal_name_check <- lapply(marginal_dist, colnames)
+  marginal_name_check_all <- all(unlist(lapply(marginal_name_check,
+                                               function(x) all(x == c("factor", "levels", "prop")))))
+  if(marginal_name_check_all == FALSE){
+    stop(" 'colnames' of 'marginal_dist' should be c('factor', 'levels', 'prop') ")
+  }
+
+  if(length(marginal_type) > 1){
+    for(z in 2:length(marginal_type)){
+      if(all(marginal_dist[[1]][,1] == marginal_dist[[z]][,1]) == FALSE) stop("marginal_dist should have the same order for factor.")
+      if(all(marginal_dist[[1]][,2] == marginal_dist[[z]][,2]) == FALSE) stop("marginal_dist should have the same order for levels.")
+    }
+  }
+
+  if(all(is.element(factor_name, unique(marginal_dist[[1]]$factor))) == FALSE){
+    stop(" 'factor_name' can only take a subset of factors estimated in 'cAME.estimate'")
+  }
+  if(missing(col)){
+    col <- rep("black",length(unique(marginal_dist[[1]]$levels)))
+  }
+  if(missing(pch)){
+    pch <- rep(19,length(unique(marginal_dist[[1]]$levels)))
+  }
+  if(missing(mar)){
+    mar <- 6
+  }
+
+  ## Collect all Distributions ----------
+  p_mar_coef <- list()
+  for(z in 1: length(marginal_dist)){
+    p_coef_full <- c()
+    p_name_full <- p_name_f_full <- p_col_full <- p_pch_full <- c()
+    for(g in 1:length(factor_name)){
+      p_mar  <- marginal_dist[[z]][marginal_dist[[z]]$factor == factor_name[g], ]
+
+      p_coef <- c(NA, p_mar$prop)
+      p_name_t <- paste(factor_name[g], ":   ", sep="")
+      p_name_b   <- as.character(p_mar$levels)
+      p_name_b[p_mar$type != p_mar$type[1]] <- ""
+      p_name_f <- c(p_name_t, rep("", length(p_name_b)))
+      p_name   <- c("", p_name_b)
+      p_col  <- c(NA, rep(col[z], length(unique(p_mar$levels))))
+      p_pch  <- c(NA, rep(pch[z], length(unique(p_mar$levels))))
+
+      ## Store values
+      p_coef_full  <- c(p_coef_full, p_coef)
+      p_name_f_full <- c(p_name_f_full, p_name_f)
+      p_name_full <- c(p_name_full, p_name)
+      p_col_full  <- c(p_col_full, p_col)
+      p_pch_full  <- c(p_pch_full, p_pch)
+    }
+    p_mar_coef$p_coef_full[[z]] <- p_coef_full
+    p_mar_coef$p_name_full[[z]] <- p_name_full
+    p_mar_coef$p_name_f_full[[z]] <- p_name_f_full
+    p_mar_coef$p_col_full[[z]] <- p_col_full
+    p_mar_coef$p_pch_full[[z]] <- p_pch_full
+  }
+
+
+  ## Plot Setup for Proportion----------
+  p_type_prop <- marginal_type
+  p_x_prop <- c(0, max(unlist(p_mar_coef$p_coef_full), na.rm = TRUE))
+
+  ## Plot ----------
+
+  par(oma = c(1, mar,1,1), mar=c(4,2,4,1))
+  ## Plot ----------
+  plot(rev(p_mar_coef$p_coef_full[[1]]), seq(1:length(p_mar_coef$p_coef_full[[1]])),
+       pch=pch[1],
+       yaxt="n", ylab = "", main = main, xlim = p_x_prop, type = "o",
+       ylim = c(1, length(p_name_f_full)),
+       xlab = "Proportions", col = col[1])
+  if(length(marginal_dist) > 1){
+    for(z in 2:length(marginal_dist)){
+      points(rev(p_mar_coef$p_coef_full[[z]]),
+             seq(1:length(p_mar_coef$p_coef_full[[z]])) + 0.05*z,
+             pch=pch[z], type = "o", col = col[z])
+    }
+  }
+  Axis(side=2, at = 0.25 + seq(1:length(p_mar_coef$p_name_full[[1]])),
+       labels = rev(p_mar_coef$p_name_full[[1]]), las=1, font = 1, tick=F,
+       cex.axis = cex)
+  Axis(side=2, at = 0.25 + seq(1:length(p_mar_coef$p_name_f_full[[1]])),
+       labels = rev(p_mar_coef$p_name_f_full[[1]]), las=1, font = 2, tick=F,
+       cex.axis = cex)
+  abline(v=0, lty=2)
+  if(is.character(legend_pos[1])==TRUE)  legend(legend_pos, p_type_prop, col= col, pch = pch)
+  if(is.character(legend_pos[1])==FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                p_type_prop, col= col, pch = pch)
 
 }
 
 
-coefMake <- function(original_level){
+
+
+coefMake <- function(original_level, cross_int){
   # Expand Coefficients
   n_fac <- length(original_level)
   original_name <- list()
@@ -840,7 +1191,7 @@ coefMake <- function(original_level){
     main_name <- c(main_name, original_name[[z]][-1])
   }
 
-  # For Interaction effects
+  # For Interaction effects (within profiles)
   combMat <- combn(n_fac, 2)
   int_name <- c()
   for(z in 1:ncol(combMat)){
@@ -853,6 +1204,21 @@ coefMake <- function(original_level){
     int_name <- c(int_name, int0)
   }
   coef_name <- c(main_name, int_name)
+
+  # For Interaction effects (across profiles)
+  if(cross_int == TRUE){
+    cross_int_name <- c()
+    for(z in 1:length(original_level)){
+      L1 <- original_name[[z]]
+      L2  <- paste(paste(names(original_level)[z],"_rp",sep=""),
+                                   original_level[[z]], sep = "")
+      c_1 <- c_2 <- seq(from = 2, to = length(L1))
+      int0 <- paste(L1[rep(c_1, times = length(c_2))],
+                    L2[rep(c_2, each = length(c_1))], sep = ":")
+      cross_int_name <- c(cross_int_name, int0)
+    }
+    coef_name <- c(coef_name, cross_int_name)
+  }
   return(coef_name)
 }
 

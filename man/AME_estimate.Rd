@@ -4,8 +4,9 @@
 \alias{AME_estimate}
 \title{Estimating PAMCE withithout regularization}
 \usage{
-AME_estimate(formula, data, pair = FALSE, pair_id = NULL, cluster,
-  marginal_dist, marginal_type, difference = FALSE)
+AME_estimate(formula, data, pair = FALSE, pair_id = NULL,
+  cross_int = TRUE, cluster, marginal_dist, marginal_type,
+  difference = FALSE)
 }
 \arguments{
 \item{formula}{formula}

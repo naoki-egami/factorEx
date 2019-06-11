@@ -1,0 +1,54 @@
+## Allow for three-way interactions (06/07/2019; done)
+# formula_full will include three-way interactions
+# change 1: Estimate AMEs from coefficients
+# change 2: Expand coefficients
+# Note: No need to change STD methods
+# (0) coefIntAME (need to allow for three)
+# (1) AME_estimate (need to allow for three) (coefIntAME, SE = TRUE)
+# (2) AME_fit (need to allow for three) (coefIntAME, SE = FALSE)
+# (3) coefMake (need to expand)
+# (4) .boot function  (need to modify formula_full)
+# (5) fit.after.collapse.gen (main; need to expand properly)
+
+## Update on naming rules within the function (06/07/2019; done)
+# only update AME_estiamte_full.R
+Check
+(1) formula (2) data (3) marginal_dist
+Need to bring them back
+(1) AME table (2) coef
+
+###################
+# AME_fit_basic.R #
+###################
+# 1. AME.fit (done)
+# 2. AME.fit.STD (no need to change)
+# 3. AME.fit.STD.se (no need to change)
+# 4. cluster_se_glm (no need to change)
+# 5. AME_from_boot (done)
+# 6. cAME_from_boot (need!!)
+# 7. plot_cAME (need!!)
+# 8. decompose_AME (done)
+# 9. plot_AME (no need to change)
+# 10. plot_AME (no need to change)
+# 11. coefMake (no need to change)
+# 12. createDist (no need to change)
+
+# ##################################
+# AME_estimate_collapse_genlasso.R
+# ##################################
+# 1. AME_estimate_collapse_genlasso (done)
+
+# ##################################
+# AME_fit_collapse_gen.R
+# ##################################
+1. AME.collapse.genlasso.crossfit.boot (done)
+2. makeWeight (no need to change)
+3. col.base.genlasso (no need to change)
+4. cv.genlasso (no need to change)
+5. cv.genlasso.base (no need to change)
+6. col.genlasso (no need to change)
+7. crossFitPar (done)
+8. AME.collapse.gen.crossfit (done)
+9. collapse.fit.gen (done)
+10. fit.after.collapse.gen (done) (!TRICKY because I need to expand)
+11. Collapse.genlasso (no need to change)
