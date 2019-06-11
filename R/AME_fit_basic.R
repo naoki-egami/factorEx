@@ -13,7 +13,8 @@ AME.fit <- function(formula_full,
                     marginal_dist_u_list,
                     marginal_dist_u_base,
                     marginal_type,
-                    difference = FALSE){
+                    difference = FALSE,
+                    three_way = FALSE){
   # Differencing ----------
   if(pair==TRUE){
     data0 <- data[order(data$pair_id),]
@@ -74,11 +75,12 @@ AME.fit <- function(formula_full,
   # colnames(vcovInt) <- rownames(vcovInt) <- base_name
 
   # Estimate AMEs ----------
-  # Estimeate AME from two-ways
+  # Estimeate AME from two-ways (or three-ways)
   table_AME <- coefIntAME(coefInt = coefInt, vcovInt = NULL, SE = FALSE,
                           marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
                           marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
-                          difference = difference, cross_int = cross_int)
+                          difference = difference, cross_int = cross_int, three_way = three_way)
+
   # table_AME <- c()
   # for(m in 1:nrow(marginal_dist_u_base)){
   #   coef_focus <- coefInt[grep(marginal_dist_u_base$level[m], names(coefInt), fixed = T)]
@@ -133,8 +135,9 @@ AME.fit <- function(formula_full,
   return(out)
 }
 
+
 coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dist_u_list, marginal_dist_u_base,
-                       marginal_type, difference, cross_int){
+                       marginal_type, difference, cross_int, three_way = FALSE){
 
   # Estimate AMEs ----------
   table_AME <- c()
@@ -152,13 +155,27 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
         estNames <- sub(paste(marginal_dist[[1]]$factor[m],"_rp", sep = ""),
                         marginal_dist[[1]]$factor[m], estNames)
       }
+      # allow for three-ways
+      if(three_way == TRUE){
+        estL <- strsplit(estNames, ":")
+        estL <- do.call("rbind", lapply(estL, function(x) if(length(x)==1){c(x[1], NA)}else{x}))
+      }
 
       table_AME_m <- c()
       # For each marginal distribution,
       for(z in 1:length(marginal_dist_u_list)){
         marginal_dist_u <- marginal_dist_u_list[[z]]
         # Find weights
-        coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+        if(three_way == FALSE){
+          coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+        }else if(three_way == TRUE){
+          # allow for three-ways
+          coef_prop_1 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,1], marginal_dist_u[, "level"]), "prop"]))[-1])
+          coef_prop_2 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,2], marginal_dist_u[, "level"]), "prop"]))[-1])
+          coef_prop_1[is.na(coef_prop_1) == TRUE] <- 1; coef_prop_2[is.na(coef_prop_2) == TRUE] <- 1
+          coef_prop <- coef_prop_1*coef_prop_2
+        }
+
         # Compute AMEs
         coef_AME <- sum(coef_focus * coef_prop)
         if(SE == TRUE) se_AME <- sqrt(coef_prop%*%vcov_focus%*%coef_prop)
@@ -173,8 +190,22 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
         for(z in 2:length(marginal_dist_u_list)){
           marginal_dist_u <- marginal_dist_u_list[[z]]
           # Find weights
-          coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
-          coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
+          if(three_way == FALSE){
+            coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
+            oef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
+          }else if(three_way == TRUE){
+
+            coef_prop_1 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,1], marginal_dist_u[, "level"]), "prop"]))[-1])
+            coef_prop_2 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,2], marginal_dist_u[, "level"]), "prop"]))[-1])
+            coef_prop_1[is.na(coef_prop_1) == TRUE] <- 1; coef_prop_2[is.na(coef_prop_2) == TRUE] <- 1
+            coef_prop <- coef_prop_1*coef_prop_2
+
+            coef_prop0_1 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estL[,1], marginal_dist_u_base[, "level"]), "prop"]))[-1])
+            coef_prop0_2 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estL[,2], marginal_dist_u_base[, "level"]), "prop"]))[-1])
+            coef_prop0_1[is.na(coef_prop0_1) == TRUE] <- 1; coef_prop0_2[is.na(coef_prop0_2) == TRUE] <- 1
+            coef_prop0 <- coef_prop0_1*coef_prop0_2
+          }
+
           # Compute AMEs
           coef_prop_d <- (coef_prop - coef_prop0)
           coef_AME_dif <- sum(coef_focus * coef_prop_d)
@@ -347,7 +378,80 @@ AME.fit.STD.se <- function(formula,
   return(table_AME)
 }
 
+Fthree <- function(formula,
+                    data,
+                    pair = FALSE, cross_int = TRUE,
+                    out){
+
+
+  factor_l <- length(all.vars(formula)[-1])
+  combMat <- combn(factor_l,2); intNames <- c()
+  for(k in 1:ncol(combMat)){
+    intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
+  }
+  formula_full0 <- paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep="")
+  if(is.null(formula_three_c) == TRUE){
+    formula_full <- as.formula(formula_full0)
+  }else{
+    formula_full <- as.formula(paste(formula_full0, formula_three_c, sep = "+"))
+  }
+
+  # Differencing ----------
+  if(pair==TRUE){
+    data0 <- data[order(data$pair_id),]
+    side <- rep(c(1,0),times=nrow(data0)/2)
+    data1 <- data0[side==1,]
+    data2 <- data0[side==0,]
+
+    # incorporate cross-profile interactions
+    X1 <- model.matrix(formula_full, data=data1)[,-1]
+    X2 <- model.matrix(formula_full, data=data2)[ ,-1]
+    X <- cbind(1, X1 - X2)
+
+    if(cross_int == TRUE){
+
+      base_fac <- all.vars(formula_full)[-1]
+      data2_u <- data2[,base_fac]; colnames(data2_u) <- paste(base_fac,"_rp",sep="")
+      data_c <- cbind(data1[,base_fac], data2_u)
+      for_cross <- paste("~", paste(paste(base_fac, paste(base_fac,"_rp",sep=""), sep="*"),
+                                    collapse = "+"))
+      for_cross0 <- paste("~", paste(base_fac, collapse = "+"))
+      data_cross0 <- model.matrix(as.formula(for_cross0), data = data_c)[,-1]
+      sing <- 2*ncol(data_cross0)
+      data_cross <- model.matrix(as.formula(for_cross), data = data_c)
+      data_cross <- data_cross[,-1]
+      X_cross <- data_cross[, c((sing + 1): ncol(data_cross))] # don't need to rename
+
+      # modify X and ind_b
+      X <- cbind(X, X_cross)
+    }
+    y <- model.frame(formula_full, data=data1)[ ,1]
+    # base_name <- c("(Intercept)", colnames(X1))
+
+  }else{
+    cluster_original <- data$cluster
+    X <- model.matrix(formula_full, data=data)
+    y <- model.frame(formula_full, data=data)[,1]
+    # base_name <- colnames(X)
+    side <- NULL
+  }
+
+  # Approximate F-test
+  coef_f <- apply(out$boot_coef, 2, mean)
+  coef_order <- unlist(lapply(strsplit(names(coef_f), ":"), length))
+  ind_three  <- which(coef_order == 3)
+  R <-matrix(0, ncol = length(coef_f), nrow = length(ind_three))
+  R[seq(1:length(ind_three)), ind_three] <- diag(length(ind_three))
+  sigma2 <- sum((y - X%*%coef_f)^2)/(nrow(X) - ncol(X))
+  Ft <- t(R%*%coef_f)%*%solve(R%*%solve(t(X)%*%X)%*%t(R))%*%(R%*%coef_f)
+  pvalue <- pf(Ft, df1 = nrow(R), df2 = nrow(X) - ncol(X), lower.tail = FALSE)
+  return(pvalue)
+}
+
+
+# #######################
 # Help functions
+# #######################
 
 # 1. Cluster standard errors
 cluster_se_glm <- function(model, cluster){
@@ -1179,7 +1283,7 @@ plot_dist <- function(factor_name,
 
 
 
-coefMake <- function(original_level, cross_int){
+coefMake <- function(original_level, cross_int, formula_three_c){
   # Expand Coefficients
   n_fac <- length(original_level)
   original_name <- list()
@@ -1204,6 +1308,32 @@ coefMake <- function(original_level, cross_int){
     int_name <- c(int_name, int0)
   }
   coef_name <- c(main_name, int_name)
+
+  # For three-way interactions
+  if(is.null(formula_three_c) == FALSE){
+      bterm <- terms(as.formula(paste("~", formula_three_c, sep = "")))
+      bterm2 <- attr(bterm, "factors")[, attr(bterm, "order") == 3]
+      row_num <- match(rownames(attr(bterm, "factors")), names(original_level))
+      combMat <- row_num*bterm2
+      if(is.matrix(combMat)==TRUE) combMat <- apply(combMat, 2, function(x) sort(x[x!=0]))
+      else{ combMat <- matrix(sort(combMat), ncol = 1, nrow = 3)}
+
+      int3_name <- c()
+      for(z in 1:ncol(combMat)){
+        L1 <- original_name[[combMat[1,z]]]
+        L2 <- original_name[[combMat[2,z]]]
+        L3 <- original_name[[combMat[3,z]]]
+        c_1 <- seq(from = 2, to = length(L1))
+        c_2 <- seq(from = 2, to = length(L2))
+        c_3 <- seq(from = 2, to = length(L3))
+        int0 <- paste(L1[rep(c_1, times = (length(c_2)*length(c_3)))],
+                      rep(L2[rep(c_2, each = length(c_1))], times=length(c_3)),
+                      L3[rep(c_3, each = (length(c_1)*length(c_2)))],
+                      sep = ":")
+        int3_name <- c(int3_name, int0)
+      }
+    coef_name <- c(coef_name, int3_name)
+  }
 
   # For Interaction effects (across profiles)
   if(cross_int == TRUE){

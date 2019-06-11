@@ -97,6 +97,19 @@ data <- dfOnoRep
 exp_dist <- createDist(formula_u, data = data)
 marginal_dist <- list(exp_dist)
 
+formula_three <- ~ age*race*family + pos_security*experience*age
+formula_c <- paste(as.character(formula)[2], as.character(formula)[1], as.character(formula)[3], collapse = "")
+
+factor_l <- length(all.vars(formula)[-1])
+combMat <- combn(factor_l,2); intNames <- c()
+for(k in 1:ncol(combMat)){
+  intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
+}
+formula_full_c <- paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep="")
+formula_aug <- paste(formula_full_c, as.character(formula_three)[2], sep = "+")
+
+terms(as.formula(formula_full))
+
 ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
                                 data = data,
                                 pair = TRUE, pair_id = data$pair_id,
@@ -104,10 +117,25 @@ ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
                                 cluster = data$id, cross_int = TRUE,
                                 marginal_dist = exp_dist,
                                 marginal_type = "Exp",
-                                type = "genlasso")
+                                type = "genlasso", boot = 30)
 
 ameOut_no1$AME
 ameOut_no1$boot_coef
+
+ameOut_no12 <- AME_estimate_full(formula = as.formula(formula_u),
+                                 formula_three = ~ age*trait*race,
+                                 data = data,
+                                 pair = TRUE, pair_id = data$pair_id,
+                                 difference = FALSE,
+                                 cluster = data$id, cross_int = TRUE,
+                                 marginal_dist = exp_dist,
+                                 marginal_type = "Exp",
+                                 type = "genlasso", boot = 30)
+
+ameOut_no12$AME
+ameOut_no12$Ftest
+dim(ameOut_no1$boot_coef)
+dim(ameOut_no12$boot_coef)
 
 ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
                                 data = data,
@@ -121,11 +149,48 @@ ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
 ameOut_no2$AME
 ameOut_no2$boot_coef
 
+ameOut_no22 <- AME_estimate_full(formula = as.formula(formula_u),
+                                 formula_three = ~ age*trait*race,
+                                 data = data,
+                                 pair = TRUE, pair_id = data$pair_id,
+                                 difference = FALSE,
+                                 cluster = data$id, cross_int = TRUE,
+                                 marginal_dist = exp_dist,
+                                 marginal_type = "Exp",
+                                 type = "No-Reg")
+
+ameOut_no22$AME
+ameOut_no22$boot_coef
+
 out1 <- do.call("rbind", ameOut_no1$AME)
+out12 <- do.call("rbind", ameOut_no12$AME)
 out2 <- do.call("rbind", ameOut_no2$AME)
+out22 <- do.call("rbind", ameOut_no22$AME)
 
 plot(out1$estimate, out2$estimate)
 abline(0, 1)
+
+plot(out2$estimate, out22$estimate)
+abline(0, 1)
+
+plot(out12$estimate, out22$estimate)
+abline(0, 1)
+
+plot(out1$estimate, out12$estimate)
+abline(0, 1)
+
+plot(out1$se, out12$se)
+abline(0, 1)
+
+formula = as.formula(formula_u);
+formula_three = ~ age*trait*race;
+data = data;
+pair = TRUE; pair_id = data$pair_id;
+difference = FALSE;
+cluster = data$id; cross_int = TRUE;
+marginal_dist = list(exp_dist);
+marginal_type = "Exp";
+type = "genlasso"
 
 names(ameOut_no1)
 out <- ameOut_no1

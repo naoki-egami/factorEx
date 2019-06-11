@@ -3,12 +3,15 @@
 # change 1: Estimate AMEs from coefficients
 # change 2: Expand coefficients
 # Note: No need to change STD methods
-# (0) coefIntAME (need to allow for three)
-# (1) AME_estimate (need to allow for three) (coefIntAME, SE = TRUE)
-# (2) AME_fit (need to allow for three) (coefIntAME, SE = FALSE)
-# (3) coefMake (need to expand)
-# (4) .boot function  (need to modify formula_full)
-# (5) fit.after.collapse.gen (main; need to expand properly)
+# (0) coefIntAME (done)  (need to allow for three)
+# (1) AME_estimate (done) (need to allow for three) (coefIntAME, SE = TRUE)
+# (2) AME_fit (done) (need to allow for three) (coefIntAME, SE = FALSE)
+# (3) coefMake (done) (need to expand)
+# (4) .boot function (done) (need to modify formula_full)
+# (5) fit.after.collapse.gen (done) (main; need to expand properly)
+# (6) AME_estimate_full (done)
+# (7) F test
+# (7) Additional functions (####) (AME_from_boot, cAME_from_boot)
 
 ## Update on naming rules within the function (06/07/2019; done)
 # only update AME_estiamte_full.R

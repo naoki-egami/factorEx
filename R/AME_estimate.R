@@ -11,7 +11,7 @@ AME_estimate <- function(formula,
                          cluster,
                          marginal_dist,
                          marginal_type,
-                         difference = FALSE){
+                         difference = FALSE, formula_three_c){
 
   ###########
   ## Check ##
@@ -53,13 +53,18 @@ AME_estimate <- function(formula,
   ###########
   ## Setup ##
   ###########
-  # Create two-way interaction formula ----------
+  # Create two-way interaction formula (allow for three-ways) ----------
   factor_l <- length(all.vars(formula)[-1])
   combMat <- combn(factor_l,2); intNames <- c()
   for(k in 1:ncol(combMat)){
     intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
   }
-  formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
+  formula_full0 <- paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep="")
+  if(is.null(formula_three_c) == TRUE){
+    formula_full <- as.formula(formula_full0)
+  }else{
+    formula_full <- as.formula(paste(formula_full0, formula_three_c, sep = "+"))
+  }
 
   # Baseline ----------
   baseline <- lapply(model.frame(formula, data=data)[,-1],
@@ -142,10 +147,17 @@ AME_estimate <- function(formula,
 
   # Estimate AMEs ----------
   ## Estimate AMEs from two-ways
-  table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
-                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
-                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
-                          difference = difference, cross_int = cross_int)
+  if(is.null(formula_three_c) == TRUE){
+    table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
+                            marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                            marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                            difference = difference, cross_int = cross_int)
+  }else if(is.null(formula_three_c) == FALSE){
+    table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
+                            marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                            marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                            difference = difference, cross_int = cross_int, three_way = TRUE)
+  }
 
   # table_AME <- c()
   # for(m in 1:nrow(marginal_dist_u_base)){

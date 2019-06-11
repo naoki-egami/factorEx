@@ -6,7 +6,7 @@
 \usage{
 AME.fit(formula_full, data, pair = FALSE, cross_int = TRUE,
   marginal_dist, marginal_dist_u_list, marginal_dist_u_base, marginal_type,
-  difference = FALSE)
+  difference = FALSE, three_way = FALSE)
 }
 \arguments{
 \item{data}{data}

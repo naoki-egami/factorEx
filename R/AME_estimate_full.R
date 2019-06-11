@@ -25,6 +25,7 @@
 #' @export
 
 AME_estimate_full <- function(formula,
+                              formula_three = NULL,
                               data,
                               type = "genlasso",
                               ord.fac,
@@ -148,6 +149,15 @@ AME_estimate_full <- function(formula,
     rename_fac <- cbind(all.vars(formula_orig), c("Y", fac_name))
     colnames(rename_fac) <- c("original", "internal")
 
+    if(is.null(formula_three) == FALSE){
+      formula_three_c <- as.character(formula_three)[2]
+      for(i in 2:nrow(rename_fac)){
+        formula_three_c <- gsub(rename_fac[i,1], rename_fac[i,2], formula_three_c)
+      }
+    }else{
+      formula_three_c <- NULL
+    }
+
     # Rename levels
     original_level <- lapply(model.frame(formula_orig, data = data)[,-1], FUN = function(x) levels(x))
     internal_level <- list()
@@ -182,7 +192,7 @@ AME_estimate_full <- function(formula,
                          cluster = cluster,
                          marginal_dist = marginal_dist,
                          marginal_type = marginal_type,
-                         difference = difference)
+                         difference = difference, formula_three_c = formula_three_c)
   }else if(type == "gash-anova"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
     out <- AME_estimate_collapse_gash(formula = formula,
@@ -210,6 +220,7 @@ AME_estimate_full <- function(formula,
                                           cluster = cluster,
                                           marginal_dist = marginal_dist,
                                           marginal_type = marginal_type,
+                                          formula_three_c = formula_three_c,
                                           difference = difference,
                                           cv.type = cv.type,
                                           nfolds = nfolds,
@@ -218,6 +229,18 @@ AME_estimate_full <- function(formula,
                                           numCores = numCores,
                                           seed = seed)
   }
+
+  ## Approximate F-test
+  if(is.null(formula_three_c) == FALSE){
+    Ftest <- Fthree(formula = formula,
+                    data = data,
+                    pair = pair, cross_int = cross_int,
+                    out = out)
+
+    out$Ftest <- as.numeric(Ftest)
+  }
+
+
 
   # ##############
   # Name back
