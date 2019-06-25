@@ -256,6 +256,16 @@ AME_estimate_full <- function(formula,
     out$input$marginal_dist <- marginal_dist_orig
     out$baseline <- baseline_orig
 
+    marginal_dist_u_list <- list()
+    for(z in 1:length(marginal_dist_orig)){
+      marginal_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(marginal_dist_orig[[z]])))
+      marginal_dist_u_list[[z]]$level <- paste(marginal_dist_orig[[z]][,1], marginal_dist_orig[[z]][,2],sep="")
+      marginal_dist_u_list[[z]]$prop  <- marginal_dist_orig[[z]][,3]
+    }
+    marginal_dist_u_base <- marginal_dist_u_list[[1]]
+    out$input$marginal_dist_u_list <- marginal_dist_u_list
+    out$input$marginal_dist_u_base <- marginal_dist_u_base
+
     # AME
     for(i in 1:length(out$AME)){
       match_level <- match(out$AME[[i]]$level, internal_level[[out$AME[[i]]$factor[1]]])

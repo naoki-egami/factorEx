@@ -1,3 +1,6 @@
+## Need to generalize decompose_AME
+
+
 ## Allow for three-way interactions (06/07/2019; done)
 # formula_full will include three-way interactions
 # change 1: Estimate AMEs from coefficients
