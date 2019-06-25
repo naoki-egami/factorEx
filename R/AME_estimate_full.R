@@ -42,7 +42,7 @@ AME_estimate_full <- function(formula,
                               seed = 1234,
                               numCores = NULL){
 
-  cat("Using version-conditional_effect:\n")
+  cat("Using version `three-way` :\n")
 
   ###########
   ## Check ##

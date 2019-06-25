@@ -1,7 +1,7 @@
 Package: PopCon
 Type: Package
 Title: Estimating Population Average Marginal Component Effects
-Version: 0.1.2
+Version: 0.2.0
 Author: Naoki Egami
 Maintainer: Naoki Egami <negami@princeton.edu>
 Description: Estimating Population Average Marginal Component Effects
