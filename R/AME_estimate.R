@@ -3,6 +3,7 @@
 #' @param data data
 #' @param pair whether we use the paired-conjoint design
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @importFrom mvtnorm rmvnorm
 #' @export
 
 AME_estimate <- function(formula,
@@ -11,6 +12,7 @@ AME_estimate <- function(formula,
                          cluster,
                          marginal_dist,
                          marginal_type,
+                         boot,
                          difference = FALSE, formula_three_c){
 
   ###########
@@ -242,6 +244,9 @@ AME_estimate <- function(formula,
     }
   }
 
+  ##  bootstrap coefficients
+  boot_coef <- rmvnorm(n = boot, mean = coefInt, sigma = vcovInt)
+
 
 
   ## For Each Factor
@@ -260,6 +265,7 @@ AME_estimate <- function(formula,
 
   output <- list("AME" = AME, "baseline" = baseline, "coef" = coefInt,
                  "type_all" = type_all, "type_difference" = type_difference,
+                 "boot_coef" = boot_coef,
                  "input" = input)
   return(output)
 }

@@ -5,7 +5,7 @@
 \title{Estimating PAMCE withithout regularization}
 \usage{
 AME_estimate(formula, data, pair = FALSE, pair_id = NULL,
-  cross_int = TRUE, cluster, marginal_dist, marginal_type,
+  cross_int = TRUE, cluster, marginal_dist, marginal_type, boot,
   difference = FALSE, formula_three_c)
 }
 \arguments{

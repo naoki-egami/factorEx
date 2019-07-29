@@ -192,7 +192,7 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
           # Find weights
           if(three_way == FALSE){
             coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
-            oef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
+            coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
           }else if(three_way == TRUE){
 
             coef_prop_1 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,1], marginal_dist_u[, "level"]), "prop"]))[-1])
