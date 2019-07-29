@@ -20,10 +20,8 @@ marginal_dist <- list(distList$Exp, distList$`Rep Pop`)
 ameOut <- AME_estimate_full(formula = as.formula(formula_u),
                             data = dfOnoRep,
                             pair = TRUE, pair_id = dfOnoRep$pair_id,
-                            difference = FALSE,
-                            cluster = dfOnoRep$id, cross_int = TRUE,
-                            marginal_dist = marginal_dist,
-                            marginal_type = c("Exp", "Rep Pop"),
+                            cluster = dfOnoRep$id,
+                            marginal_dist = marginal_dist, marginal_type = c("Exp", "Rep Pop"),
                             boot = 100)
 
 # Figure 1: Estimates of AMCE

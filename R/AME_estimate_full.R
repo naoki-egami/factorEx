@@ -65,6 +65,8 @@ AME_estimate_full <- function(formula,
   if(pair==TRUE & all(table(pair_id)==2)==FALSE){
     stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
   }
+  if(is.null(pair_id) == FALSE) pair <- TRUE
+
   if(pair == FALSE){
     cross_int <- FALSE
   }

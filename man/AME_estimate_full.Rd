@@ -2,48 +2,43 @@
 % Please edit documentation in R/AME_estimate_full.R
 \name{AME_estimate_full}
 \alias{AME_estimate_full}
-\title{Estimating PAMCE withithout regularization}
+\title{Estimating the population AMCE using the model-based approach}
 \usage{
 AME_estimate_full(formula, formula_three = NULL, data,
   type = "genlasso", ord.fac, pair = FALSE, pair_id = NULL,
   cross_int = TRUE, cluster = NULL, marginal_dist, marginal_type,
-  difference = FALSE, family = "binomial", nway = 1,
-  cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7), cv.type = "cv.1Std",
-  nfolds = 5, boot = 100, seed = 1234, numCores = NULL)
+  difference = FALSE, cv.type = "cv.1Std", nfolds = 5, boot = 100,
+  seed = 1234, numCores = NULL)
 }
 \arguments{
-\item{formula}{formula}
+\item{formula}{Formula}
 
-\item{data}{data}
+\item{formula_three}{Formula for three-way interactions}
 
-\item{type}{"No-Reg", "gash-anova", or "genlasso"}
+\item{data}{Data}
 
-\item{ord.fac}{whether we assume each factor is ordered. When not specified, we assume all of them are ordered.}
+\item{type}{"No-Reg" or "genlasso"}
 
-\item{pair}{whether we use the paired-conjoint design}
+\item{ord.fac}{Whether we assume each factor is ordered. When not specified, we assume all of them are ordered}
 
-\item{cross_int}{include interactions across profiles}
+\item{pair}{Whether we use a paired-choice conjoint design}
 
-\item{cluster}{id for cluster}
+\item{cross_int}{Include interactions across profiles}
 
-\item{marginal_dist}{marginal distributions}
+\item{cluster}{unique identifiers for cluster}
 
-\item{marginal_type}{names of marginal distributions}
+\item{marginal_dist}{Marginal distributions of profiles to be used}
 
-\item{difference}{whether we compute the difference between different estimators}
+\item{marginal_type}{Names of marginal distributions}
 
-\item{family}{(only when 'type = gash-anova') when outcomes are binary, "binomial". when outcomes are continuous, "gaussian"}
+\item{difference}{Whether we compute the difference between different pAMCEs}
 
-\item{nway}{(only when `type = gash-anova`) Should be 1 almost always.}
+\item{cv.type}{(when type =genlasso)  `cv.1Std`` (stronger) or `cv.min` (weaker).}
 
-\item{cv.collapse.cost}{(only when `type = gash-anova`) a grid for cross-validation in gash-anova}
+\item{boot}{The number of bootstrap samples}
 
-\item{cv.type}{(when type = gash-anova or genlasso) `cv.1Std`` (stronger) or `cv.min` (weaker).}
-
-\item{boot}{(when type = gash-anova or genlasso) the number of bootstrap}
-
-\item{seed}{seed for bootstrap}
+\item{seed}{Seed for bootstrap}
 }
 \description{
-Estimating PAMCE withithout regularization
+Estimating the population AMCE using the model-based approach
 }
