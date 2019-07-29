@@ -1,21 +1,18 @@
-#' Estimating PAMCE withithout regularization
-#' @param formula formula
-#' @param data data
-#' @param type "No-Reg", "gash-anova", or "genlasso"
-#' @param ord.fac whether we assume each factor is ordered. When not specified, we assume all of them are ordered.
-#' @param pair whether we use the paired-conjoint design
-#' @param cross_int include interactions across profiles
-#' @param cluster id for cluster
-#' @param marginal_dist marginal distributions
-#' @param marginal_type names of marginal distributions
-#' @param difference whether we compute the difference between different estimators
-#' @param family (only when 'type = gash-anova') when outcomes are binary, "binomial". when outcomes are continuous, "gaussian"
-#' @param nway (only when `type = gash-anova`) Should be 1 almost always.
-#' @param cv.collapse.cost (only when `type = gash-anova`) a grid for cross-validation in gash-anova
-#' @param cv.type (when type = gash-anova or genlasso) `cv.1Std`` (stronger) or `cv.min` (weaker).
-#' @param boot (when type = gash-anova or genlasso) the number of bootstrap
-#' @param seed seed for bootstrap
-#' @importFrom FindIt cv.CausalANOVA CausalANOVA
+#' Estimating the population AMCE using the model-based approach
+#' @param formula Formula
+#' @param formula_three Formula for three-way interactions
+#' @param data Data
+#' @param type "No-Reg" or "genlasso"
+#' @param ord.fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
+#' @param pair Whether we use a paired-choice conjoint design
+#' @param cross_int Include interactions across profiles
+#' @param cluster unique identifiers for cluster
+#' @param marginal_dist Marginal distributions of profiles to be used
+#' @param marginal_type Names of marginal distributions
+#' @param difference Whether we compute the difference between different pAMCEs
+#' @param cv.type (when type =genlasso)  `cv.1Std`` (stronger) or `cv.min` (weaker).
+#' @param boot The number of bootstrap samples
+#' @param seed Seed for bootstrap
 #' @importFrom prodlim row.match
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @importFrom pbmcapply pbmclapply
@@ -34,25 +31,22 @@ AME_estimate_full <- function(formula,
                               marginal_dist,
                               marginal_type,
                               difference = FALSE,
-                              family = "binomial",
-                              nway = 1,
-                              cv.collapse.cost = c(0.1, 0.3, 0.5, 0.7),
                               cv.type = "cv.1Std", nfolds = 5,
                               boot = 100,
-                              seed = 1234,
-                              numCores = NULL){
+                              seed = 1234, numCores = NULL){
 
   cat("Using version `three-way` :\n")
 
   ###########
   ## Check ##
   ###########
-  if((type %in% c("No-Reg","gash-anova", "genlasso")) == FALSE){
-    warning(" 'type' should be one of 'No-Reg', 'gash-anova' and 'genalsso' ")
+  if((type %in% c("No-Reg", "genlasso")) == FALSE){
+    warning(" 'type' should be 'No-Reg' or 'genalsso' ")
   }
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
+  if(missing(marginal_type) == TRUE) marginal_type <- paste("dist_", seq(1:length(marginal_dist)), sep = "")
 
   if(is.null(numCores) == FALSE){
     if(numCores >= detectCores()) numCores <- detectCores() - 1
@@ -74,12 +68,14 @@ AME_estimate_full <- function(formula,
   if(pair == FALSE){
     cross_int <- FALSE
   }
+
   # if(is.null(pair_var) == FALSE){
   #   if(all(is.element(pair_var, all.vars(formula))) == FALSE){
   #     stop(" 'pair_var' should be variables listed in 'formula' ")}
   #   if(pair == FALSE){
   #     stop(" 'pair_var' is ignored when 'pair=FALSE' ")}
   # }
+
   if(difference==TRUE & length(marginal_type) < 2){
     stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
   }
@@ -194,24 +190,24 @@ AME_estimate_full <- function(formula,
                          marginal_type = marginal_type,
                          boot = boot,
                          difference = difference, formula_three_c = formula_three_c)
-  }else if(type == "gash-anova"){
-    if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
-    out <- AME_estimate_collapse_gash(formula = formula,
-                                      data = data,
-                                      ord.fac = ord.fac,
-                                      pair = pair, pair_id = pair_id,
-                                      cluster = cluster,
-                                      marginal_dist = marginal_dist,
-                                      marginal_type = marginal_type,
-                                      difference = difference,
-                                      family = family,
-                                      nway = nway,
-                                      cv.collapse.cost = cv.collapse.cost,
-                                      cv.type = cv.type,
-                                      boot = boot,
-                                      numCores = numCores,
-                                      seed = seed)
-
+  # }else if(type == "gash-anova"){
+  #   if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
+  #   out <- AME_estimate_collapse_gash(formula = formula,
+  #                                     data = data,
+  #                                     ord.fac = ord.fac,
+  #                                     pair = pair, pair_id = pair_id,
+  #                                     cluster = cluster,
+  #                                     marginal_dist = marginal_dist,
+  #                                     marginal_type = marginal_type,
+  #                                     difference = difference,
+  #                                     family = family,
+  #                                     nway = nway,
+  #                                     cv.collapse.cost = cv.collapse.cost,
+  #                                     cv.type = cv.type,
+  #                                     boot = boot,
+  #                                     numCores = numCores,
+  #                                     seed = seed)
+  #
   }else if(type == "genlasso"){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
     out <- AME_estimate_collapse_genlasso(formula = formula,
