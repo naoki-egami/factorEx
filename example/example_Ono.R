@@ -57,6 +57,7 @@ target_dist2 <- list(exp_marginal, exp_joint, marginal_rep, marginal_dem,  targe
 names(target_dist2) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint")
 
 ameOut <- AME_estimate_full(formula = as.formula(formula_u),
+                            formula_three = ~  age*family*race,
                             data = dfOnoRep, type = "No-Reg",
                             pair = TRUE, pair_id = dfOnoRep$pair_id,
                             cluster = dfOnoRep$id,
@@ -64,8 +65,37 @@ ameOut <- AME_estimate_full(formula = as.formula(formula_u),
                             target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
                             boot = 100)
 
+ameOut_reg <- AME_estimate_full(formula = as.formula(formula_u),
+                                formula_three = ~  age*family*race,
+                                data = dfOnoRep, type = "genlasso",
+                                pair = TRUE, pair_id = dfOnoRep$pair_id,
+                                cluster = dfOnoRep$id,
+                                target_dist = target_dist2,
+                                target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
+                                boot = 100)
+
+base <- do.call("rbind", ameOut$AME)
+base_reg <- do.call("rbind", ameOut_reg$AME)
+ameOut_reg$AME
+plot(base[, "estimate"], base_reg[, "estimate"])
+
+plot(base[base$type  == "STD", "estimate"], base_reg[base_reg$type  == "STD", "estimate"])
+abline(0, 1)
+
+
+plot(base[base$type  == "Exp_Mar", "estimate"], base_reg[base_reg$type  == "Exp_Mar", "estimate"])
+abline(0, 1)
+
+plot(base[base$type  == "STD", "se"], base_reg[base_reg$type  == "STD", "se"])
+abline(0, 1)
+
 # Figure 1: Estimates of AMCE
 plot_AME(ameOut, factor_name = c("gender", "race"),
+         plot_difference = "none",
+         plot_type  = c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint"),
+         col = c("black",  "gray", "red", "blue", "green"))
+
+plot_AME(ameOut_reg, factor_name = c("gender", "race"),
          plot_difference = "none",
          plot_type  = c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint"),
          col = c("black",  "gray", "red", "blue", "green"))

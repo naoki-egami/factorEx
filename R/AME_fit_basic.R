@@ -9,12 +9,14 @@
 AME.fit <- function(formula_full,
                     data,
                     pair = FALSE, cross_int = TRUE,
-                    marginal_dist,
-                    marginal_dist_u_list,
-                    marginal_dist_u_base,
+                    marginal_dist = NULL,
+                    marginal_dist_u_list = NULL,
+                    marginal_dist_u_base = NULL,
+                    joint_dist_u_list = NULL,
                     marginal_type,
                     difference = FALSE,
-                    three_way = FALSE){
+                    three_way = FALSE,
+                    est_AME = TRUE){
   # Differencing ----------
   if(pair==TRUE){
     data0 <- data[order(data$pair_id),]
@@ -76,10 +78,16 @@ AME.fit <- function(formula_full,
 
   # Estimate AMEs ----------
   # Estimeate AME from two-ways (or three-ways)
-  table_AME <- coefIntAME(coefInt = coefInt, vcovInt = NULL, SE = FALSE,
-                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
-                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
-                          difference = difference, cross_int = cross_int, three_way = three_way)
+  if(est_AME ==  TRUE){
+    table_AME <- coefIntAME(coefInt = coefInt, vcovInt = NULL, SE = FALSE,
+                            marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                            marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                            difference = difference, cross_int = cross_int, three_way = three_way,
+                            joint_dist_u_list = joint_dist_u_list)
+    out <- list("table_AME" = table_AME, "coef" = coefInt, "ind_b" = ind_b)
+  }else if(est_AME ==  FALSE){
+    out <- list("coef" = coefInt, "ind_b" = ind_b)
+  }
 
   # table_AME <- c()
   # for(m in 1:nrow(marginal_dist_u_base)){
@@ -131,7 +139,6 @@ AME.fit <- function(formula_full,
   #   }
   # }
   # colnames(table_AME) <- c("type", "factor", "level", "estimate")
-  out <- list("table_AME" = table_AME, "coef" = coefInt, "ind_b" = ind_b)
   return(out)
 }
 

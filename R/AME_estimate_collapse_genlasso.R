@@ -15,6 +15,7 @@ AME_estimate_collapse_genlasso <- function(formula,
                                            cluster = NULL,
                                            marginal_dist,
                                            marginal_type,
+                                           joint_dist,
                                            formula_three_c,
                                            difference = FALSE,
                                            cv.type = "cv.1Std",
@@ -93,6 +94,19 @@ AME_estimate_collapse_genlasso <- function(formula,
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
+  if(is.null(joint_dist) == TRUE){
+    joint_dist_u_list <- NULL
+  }else{
+    joint_dist_u_list <- list()
+    for(z in 1:length(joint_dist)){
+      temp <- do.call("rbind", joint_dist[[z]])
+      joint_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(temp)))
+      joint_dist_u_list[[z]]$level_1 <- paste(temp[,1], temp[,3],sep="")
+      joint_dist_u_list[[z]]$level_2 <- paste(temp[,2], temp[,4],sep="")
+      joint_dist_u_list[[z]]$prop  <- temp[,5]
+    }
+  }
+
   # three-way
   three_way <- is.null(formula_three_c) == FALSE
 
@@ -104,7 +118,7 @@ AME_estimate_collapse_genlasso <- function(formula,
                          marginal_dist_u_base = marginal_dist_u_base,
                          marginal_type = marginal_type,
                          difference = difference,
-                         three_way = three_way)
+                         three_way = three_way, est_AME = TRUE)
 
   tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
@@ -123,13 +137,14 @@ AME_estimate_collapse_genlasso <- function(formula,
                                                      fac.level = fac.level, ord.fac = ord.fac,
                                                      marginal_dist = marginal_dist,
                                                      marginal_type = marginal_type,
+                                                     joint_dist_u_list =  joint_dist_u_list,
                                                      formula_three_c = formula_three_c,
                                                      difference = difference,
                                                      boot = boot,
                                                      cv.type = cv.type,
                                                      nfolds = nfolds,
                                                      tableAME_base = tableAME_base,
-                                                     coefAME_base_l = length(coefAME_base),
+                                                     coefAME_base_l = coefAME_base,
                                                      eps = eps,
                                                      numCores = numCores,
                                                      seed = seed)
