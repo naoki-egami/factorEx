@@ -15,24 +15,64 @@ formula_u <- Y ~ age + family + race + experience + trait + party +
   policy_expertise + pos_security + pos_immigrants + pos_abortion +
   pos_deficit + fav_rating + gender
 
-marginal_dist <- list(distList$Exp, distList$`Rep Pop`)
+joint_dist <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "joint")
+
+exp_marginal <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "marginal")
+
+load("example/ono_data_joint_distribution.RData")
+full_joint <- dfJoint
+
+is.element(all.vars(formula_u), colnames(full_joint))
+
+#
+marginal_rep <- tapply(distList$`Rep Pop`$prop, distList$`Rep Pop`$factor, function(x) x)
+marginal_rep_n <- tapply(distList$`Rep Pop`$levels, distList$`Rep Pop`$factor, function(x) x)
+for(i in 1:length(marginal_rep)){
+  names(marginal_rep[[i]])  <- marginal_rep_n[[i]]
+}
+
+marginal_dem <- tapply(distList$`Dem Pop`$prop, distList$`Dem Pop`$factor, function(x) x)
+marginal_dem_n <- tapply(distList$`Dem Pop`$levels, distList$`Dem Pop`$factor, function(x) x)
+for(i in 1:length(marginal_dem)){
+  names(marginal_dem[[i]])  <- marginal_dem_n[[i]]
+}
+
+# Experimental Marginal Distribution
+exp_marginal <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "marginal")
+
+# Experimental Joint Distribution
+exp_joint <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "joint")
+
+# Target Data
+target_data <- full_joint[, is.element(colnames(full_joint), all.vars(formula_u)) == TRUE]
+
+## Need to have the same level names
+levels(target_data$age)  <-  levels(dfOnoRep$age)
+levels(target_data$race) <-  levels(dfOnoRep$race)
+levels(target_data$experience)   <- levels(dfOnoRep$experience)
+levels(target_data$pos_security) <- levels(dfOnoRep$pos_security)
+levels(target_data$pos_deficit)  <- levels(dfOnoRep$pos_deficit)
+
+target_dist2 <- list(exp_marginal, exp_joint, marginal_rep, marginal_dem,  target_data)
+names(target_dist2) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint")
 
 ameOut <- AME_estimate_full(formula = as.formula(formula_u),
-                            data = dfOnoRep,
+                            data = dfOnoRep, type = "No-Reg",
                             pair = TRUE, pair_id = dfOnoRep$pair_id,
                             cluster = dfOnoRep$id,
-                            marginal_dist = marginal_dist, marginal_type = c("Exp", "Rep Pop"),
+                            target_dist = target_dist2,
+                            target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
                             boot = 100)
 
 # Figure 1: Estimates of AMCE
 plot_AME(ameOut, factor_name = c("gender", "race"),
          plot_difference = "none",
-         plot_type = c("Exp", "Rep Pop"), plot_name = c("Exp", "Rep Pop"),
-         col = c("black", "red"))
+         plot_type  = c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint"),
+         col = c("black",  "gray", "red", "blue", "green"))
 
 # Figure 2: Decompose Bias
 plot_decompose(ameOut, factor_name = "gender", level_name = "Male",
-               marginal_diff = c("Rep Pop", "Exp"))
+               marginal_diff = c("Exp", "Exp-Joint"))
 
 plot_decompose(ameOut, factor_name = "race", level_name = "Black",
                marginal_diff = c("Rep Pop", "Exp"))

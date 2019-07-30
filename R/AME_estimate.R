@@ -12,6 +12,7 @@ AME_estimate <- function(formula,
                          cluster,
                          marginal_dist,
                          marginal_type,
+                         joint_dist = NULL,
                          boot,
                          difference = FALSE, formula_three_c){
 
@@ -147,6 +148,21 @@ AME_estimate <- function(formula,
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
+  # Incorporate Joint Distribution
+  if(is.null(joint_dist) == TRUE){
+    joint_dist_u_list <- NULL
+  }else{
+    joint_dist_u_list <- list()
+    for(z in 1:length(joint_dist)){
+      temp <- do.call("rbind", joint_dist[[z]])
+      joint_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(temp)))
+      joint_dist_u_list[[z]]$level_1 <- paste(temp[,1], temp[,3],sep="")
+      joint_dist_u_list[[z]]$level_2 <- paste(temp[,2], temp[,4],sep="")
+      joint_dist_u_list[[z]]$prop  <- temp[,5]
+    }
+    joint_dist_u_base <- joint_dist_u_list[[1]]
+  }
+
   # Estimate AMEs ----------
   ## Estimate AMEs from two-ways
   if(is.null(formula_three_c) == TRUE){
@@ -158,7 +174,8 @@ AME_estimate <- function(formula,
     table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
                             marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
                             marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
-                            difference = difference, cross_int = cross_int, three_way = TRUE)
+                            difference = difference, cross_int = cross_int, three_way = TRUE,
+                            joint_dist_u_list = joint_dist_u_list)
   }
 
   # table_AME <- c()

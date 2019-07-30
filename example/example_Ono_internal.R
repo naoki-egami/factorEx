@@ -29,6 +29,99 @@ lm_2 <- lm(Y ~ pos_abortion*pos_abortion_right, data = data_long)
 summary(lm_2)
 
 
+formula = as.formula(formula_u);
+formula_three <- ~ age*family*race
+data = dfOnoRep; type = "No-Reg";
+pair = TRUE; pair_id = dfOnoRep$pair_id;
+cluster = dfOnoRep$id;
+target_dist = target_dist2;
+boot = 100
+
+
+#  Allow for the Joint Probabilities
+
+formula_u <- Y ~ age + family + race + experience + trait + party +
+  policy_expertise + pos_security + pos_immigrants + pos_abortion +
+  pos_deficit + fav_rating + gender
+
+data <- dfOnoRep
+
+
+full_joint <- dfJoint
+
+target_data <- full_joint
+
+exp_marginal <- createDist(formula = formula_u, target_data = data, data  = data, type = "joint")
+
+target_marginal <- createDist(formula = formula_u, target_data = full_joint, data  = data, type = "joint")
+
+exp_joint <- createDist(formula_u, data = data, marginal = FALSE)
+target_joint <- createDist(formula_u, data = full_joint, marginal = FALSE)
+
+exp_joint
+target_joint
+
+
+marginal_dist <- Joint2Marginal(joint_dist)
+marginal_dist2 <- createDist(formula_u, data = data, marginal = TRUE)
+
+round(marginal_dist$prop, 3) == round(marginal_dist2$prop , 3)
+
+marginal_dist$levels == marginal_dist2$levels
+
+
+joint_dist2 <- Marginal2Joint(marginal_dist2)
+
+names(joint_dist) == names(joint_dist2)
+
+lapply(joint_dist2, function(x) sum(x[, 5]))
+
+for(i in 1:length(joint_dist)){
+  print(all(joint_dist[[i]][, 1:4] == joint_dist2[[i]][,1:4]))
+}
+
+check_dist <- marginal_dist
+
+a <- checkDist(check_dist, type = "marginal", formula = formula_u, data = data)
+
+
+joint_dist3 <- joint_dist2
+
+
+a <- checkDist(joint_dist3[c(78, 1:77)], type = "joint", formula = formula_u, data = data)
+
+a[[1]] == joint_dist2[[1]]
+
+joint_dist  <- target_dist
+
+
+
+Joint2Marginal <- function(joint_dist){
+  prop_u  <- list()
+  fac_name <- c()
+  for(i in 1:length(joint_dist)){
+    prop_u[[i]] <- tapply(joint_dist[[i]]$prop, joint_dist[[i]]$levels_1, sum)
+    fac_name[i] <- as.character(joint_dist[[i]]$factor_1[1])
+  }
+  prop_u2  <- prop_u[match(unique(fac_name), fac_name)]
+  fac_name2  <- fac_name[match(unique(fac_name), fac_name)]
+  levels_u <- names(unlist(prop_u2))
+  factor_u <-  rep(fac_name2, unlist(lapply(prop_u2, length)))
+
+  target <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+  target$factor   <- factor_u
+  target$levels <- levels_u
+  target$prop   <- unlist(prop_u2)
+  attributes(target)$dist_type <- "marginal"
+
+  return(target)
+}
+
+
+
+marginal_dist[[1]]
+
+
 # Specify Formula
 
 

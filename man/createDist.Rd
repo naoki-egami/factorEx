@@ -2,19 +2,17 @@
 % Please edit documentation in R/AME_fit_basic.R
 \name{createDist}
 \alias{createDist}
-\title{Estimating PAMCE withithout regularization}
+\title{Create Profile Distributions from data.frame}
 \usage{
-createDist(formula, data)
+createDist(formula, target_data, exp_data, type = "marginal")
 }
 \arguments{
 \item{formula}{formula}
 
-\item{data}{data}
+\item{data}{data.frame}
 
-\item{pair}{whether we use the paired-conjoint design}
-
-\item{pair_id}{id for paired-conjoint design. required when 'pair = TRUE'}
+\item{marginal}{Whether we create marginal distributions (TRUE) or the two-dimensional joint distributions}
 }
 \description{
-Estimating PAMCE withithout regularization
+Create Profile Distributions from data.frame
 }

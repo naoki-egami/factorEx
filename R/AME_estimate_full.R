@@ -28,8 +28,8 @@ AME_estimate_full <- function(formula,
                               ord.fac,
                               pair = FALSE, pair_id = NULL, cross_int = TRUE,
                               cluster = NULL,
-                              marginal_dist,
-                              marginal_type,
+                              target_dist,
+                              target_type,
                               difference = FALSE,
                               cv.type = "cv.1Std", nfolds = 5,
                               boot = 100,
@@ -46,7 +46,23 @@ AME_estimate_full <- function(formula,
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
-  if(missing(marginal_type) == TRUE) marginal_type <- paste("dist_", seq(1:length(marginal_dist)), sep = "")
+  if(missing(target_type) == TRUE){
+    target_type <- rep("marginal", length(target_dist))
+  }
+
+  if(all(target_type %in% c("marginal", "joint", "target_data")) == FALSE){
+    warning(" 'target_type' should be 'marginal', 'joint' or 'target_data' ")
+  }
+
+  if(length(target_type) != length(target_dist)){
+    stop(" length of 'target_type' should be the same as length of 'target_dist' ")
+  }
+
+  if(is.null(names(target_dist)) == TRUE){
+    target_name <- paste("dist_", seq(1:length(target_dist)), sep = "")
+  }else{
+    target_name <- names(target_dist)
+  }
 
   if(is.null(numCores) == FALSE){
     if(numCores >= detectCores()) numCores <- detectCores() - 1
@@ -78,23 +94,58 @@ AME_estimate_full <- function(formula,
   #     stop(" 'pair_var' is ignored when 'pair=FALSE' ")}
   # }
 
-  if(difference==TRUE & length(marginal_type) < 2){
-    stop("if 'difference = TRUE', marginal_dist should contain more than one distribution.")
+  if(difference==TRUE & length(target_dist) < 2){
+    stop("if 'difference = TRUE', target_dist should contain more than one distribution.")
   }
-  if(class(marginal_dist) != "list"){
-    marginal_dist <- list(marginal_dist)
+  if(class(target_dist) != "list"){
+    target_dist <- list(target_dist)
   }
-  if(is.list(marginal_dist)==FALSE){
-    stop("marginal_dist should be 'list'.")
+  if(is.list(target_dist)==FALSE){
+    stop("target_dist should be 'list'.")
   }
+
+  ## Check each distribution
+  for(i in 1:length(target_dist)){
+    target_dist[[i]] <- checkDist(target_dist[[i]], type = target_type[i], formula = formula, data = data)
+  }
+
+  ## Create Marginals and 2d-Joints from target_dist
+  marginal_dist <- list()
+  for(i in 1:length(target_dist)){
+    if(target_type[i]  == "marginal"){marginal_dist[[i]] <- target_dist[[i]]}
+    if(target_type[i]  == "joint"){marginal_dist[[i]] <- Joint2Marginal(target_dist[[i]])}
+    if(target_type[i]  == "target_data"){marginal_dist[[i]] <- createDist(formula = formula,
+                                                                          target_data = target_dist[[i]],
+                                                                          exp_data = data, type  = "marginal")}
+    marginal_dist[[i]] <- checkDist(marginal_dist[[i]], type = "marginal", formula = formula, data = data)
+  }
+  if(is.null(formula_three) == TRUE){joint_dist <- NULL
+  } else if(is.null(formula_three) == FALSE){
+    joint_dist <- list()
+    for(i in 1:length(target_dist)){
+      if(target_type[i]  == "marginal"){joint_dist[[i]] <- Marginal2Joint(target_dist[[i]])}
+      if(target_type[i]  == "joint"){joint_dist[[i]] <- target_dist[[i]]}
+      if(target_type[i]  == "target_data"){joint_dist[[i]] <- createDist(formula = formula,
+                                                                         target_data = target_dist[[i]],
+                                                                         exp_data = data, type  = "joint")}
+      joint_dist[[i]] <- checkDist(joint_dist[[i]], type = "joint", formula = formula, data = data)
+    }
+  }
+
+  # make marginal_dist to data.frame
+  marginal_dist_internal <- marginal_dist
+  marginal_dist <- lapply(marginal_dist, list2data)
+  names(marginal_dist) <- target_name
+
+  # Check Marginal Distributions
   marginal_name_check <- lapply(marginal_dist, colnames)
   marginal_name_check_all <- all(unlist(lapply(marginal_name_check,
                                                function(x) all(x == c("factor", "levels", "prop")))))
   if(marginal_name_check_all == FALSE){
     stop(" 'colnames' of 'marginal_dist' should be c('factor', 'levels', 'prop') ")
   }
-  if(length(marginal_type) > 1){
-    for(z in 2:length(marginal_type)){
+  if(length(target_type) > 1){
+    for(z in 2:length(target_type)){
       if(all(marginal_dist[[1]][,1] == marginal_dist[[z]][,1]) == FALSE) stop("marginal_dist should have the same order for factor.")
       if(all(marginal_dist[[1]][,2] == marginal_dist[[z]][,2]) == FALSE) stop("marginal_dist should have the same order for levels.")
     }
@@ -117,7 +168,7 @@ AME_estimate_full <- function(formula,
   original_level <- lapply(model.frame(formula, data = data)[,-1], FUN = function(x) levels(x))
   mar_length <- length(unlist(original_level))
   rest_name <- colnames(check_levels)[(1 + mar_length):ncol(check_levels)][apply(check_levels[, (1 + mar_length):ncol(check_levels)],
-                                                                    2, function(x) mean(x)) == 0]
+                                                                                 2, function(x) mean(x)) == 0]
 
   rest_level <- unlist(strsplit(rest_name, ":"))
   baseline <- baseline_orig <- lapply(model.frame(formula, data=data)[,-1], FUN = function(x) levels(x)[1])
@@ -125,13 +176,13 @@ AME_estimate_full <- function(formula,
   rest_base <- basenames[is.element(basenames, rest_level)]
   rest_fac  <- all.vars(formula)[-1][is.element(basenames, rest_level)]
   if(any(is.element(basenames, rest_level))){
-      wa1 <- paste("The following ", length(rest_name), " pairs have no observation:", sep = "")
-      wa2 <- paste(paste(paste(" (", seq(1:length(rest_name)), ") ", sep = ""), rest_name, sep = ""), collapse = ", ")
-      wa3 <- "To incorporate the restriction, for each factor, select a baseline category that has no restriction."
-      wa4 <- paste("Currently, ", length(rest_base), " baselines (",
-                   paste(rest_base, collapse = ","), ") have restrictions.", sep = "")
-      wa5 <- paste("Change baselines for ", paste(rest_fac, collapse = " and "), " using relevel().", sep = "")
-      stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
+    wa1 <- paste("The following ", length(rest_name), " pairs have no observation:", sep = "")
+    wa2 <- paste(paste(paste(" (", seq(1:length(rest_name)), ") ", sep = ""), rest_name, sep = ""), collapse = ", ")
+    wa3 <- "To incorporate the restriction, for each factor, select a baseline category that has no restriction."
+    wa4 <- paste("Currently, ", length(rest_base), " baselines (",
+                 paste(rest_base, collapse = ","), ") have restrictions.", sep = "")
+    wa5 <- paste("Change baselines for ", paste(rest_fac, collapse = " and "), " using relevel().", sep = "")
+    stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
   }
 
   # ############
@@ -163,6 +214,8 @@ AME_estimate_full <- function(formula,
       internal_level[[i]] <- paste("x_", i, "_", seq(1:length(original_level[[i]])), "_x", sep = "")
     }
     names(internal_level) <- fac_name
+    fac_name_0   <- rep(names(internal_level), unlist(lapply(internal_level, length)))
+    rename_level <- cbind(fac_name_0, unlist(internal_level), unlist(original_level))
 
     # Rename data
     data_orig <- data
@@ -181,6 +234,22 @@ AME_estimate_full <- function(formula,
         marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],] <- temp
       }
     }
+
+    # Rename joint_dist
+    joint_dist_orig <- joint_dist
+    if(is.null(joint_dist) == FALSE){
+      for(z in 1:length(joint_dist)){
+        for(j in 1:length(joint_dist[[z]])){
+          joint_dist[[z]][[j]]$factor_1 <- rename_fac[match(joint_dist[[z]][[j]]$factor_1, rename_fac[, 1]), 2]
+          joint_dist[[z]][[j]]$factor_2 <- rename_fac[match(joint_dist[[z]][[j]]$factor_2, rename_fac[, 1]), 2]
+          rename_level_1 <- rename_level[rename_level[,1]%in% joint_dist[[z]][[j]]$factor_1, ]
+          rename_level_2 <- rename_level[rename_level[,1]%in% joint_dist[[z]][[j]]$factor_2, ]
+          joint_dist[[z]][[j]]$levels_1 <- rename_level_1[match(joint_dist[[z]][[j]]$levels_1, rename_level_1[, 3]), 2]
+          joint_dist[[z]][[j]]$levels_2 <- rename_level_2[match(joint_dist[[z]][[j]]$levels_2, rename_level_2[, 3]), 2]
+        }
+      }
+    }
+
   }
 
   if(type == "No-Reg"){
@@ -189,7 +258,8 @@ AME_estimate_full <- function(formula,
                          pair = pair, pair_id = pair_id, cross_int = cross_int,
                          cluster = cluster,
                          marginal_dist = marginal_dist,
-                         marginal_type = marginal_type,
+                         marginal_type = target_name,
+                         joint_dist = joint_dist,
                          boot = boot,
                          difference = difference, formula_three_c = formula_three_c)
   # }else if(type == "gash-anova"){
@@ -218,7 +288,8 @@ AME_estimate_full <- function(formula,
                                           pair = pair, pair_id = pair_id, cross_int = cross_int,
                                           cluster = cluster,
                                           marginal_dist = marginal_dist,
-                                          marginal_type = marginal_type,
+                                          marginal_type = target_name,
+                                          joint_dist = joint_dist,
                                           formula_three_c = formula_three_c,
                                           difference = difference,
                                           cv.type = cv.type,

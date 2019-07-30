@@ -137,7 +137,7 @@ AME.fit <- function(formula_full,
 
 
 coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dist_u_list, marginal_dist_u_base,
-                       marginal_type, difference, cross_int, three_way = FALSE){
+                       marginal_type, difference, cross_int, three_way = FALSE, joint_dist_u_list = NULL){
 
   # Estimate AMEs ----------
   table_AME <- c()
@@ -165,15 +165,20 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
       # For each marginal distribution,
       for(z in 1:length(marginal_dist_u_list)){
         marginal_dist_u <- marginal_dist_u_list[[z]]
+        joint_dist_u <- joint_dist_u_list[[z]]
         # Find weights
         if(three_way == FALSE){
           coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
         }else if(three_way == TRUE){
           # allow for three-ways
-          coef_prop_1 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,1], marginal_dist_u[, "level"]), "prop"]))[-1])
-          coef_prop_2 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,2], marginal_dist_u[, "level"]), "prop"]))[-1])
-          coef_prop_1[is.na(coef_prop_1) == TRUE] <- 1; coef_prop_2[is.na(coef_prop_2) == TRUE] <- 1
-          coef_prop <- coef_prop_1*coef_prop_2
+          ind_two  <- which(apply(estL, 1, function(x) any(is.na(x))))[-1]
+          prop_two <- marginal_dist_u[match(estL[ind_two,1], marginal_dist_u[, "level"]), "prop"]
+          ind_three  <- which(apply(estL, 1, function(x) all(is.na(x)==FALSE)))
+          prop_three <- joint_dist_u[row.match(as.data.frame(estL[ind_three, ]), as.data.frame(joint_dist_u[, 1:2])), "prop"]
+          coef_prop  <- rep(NA, nrow(estL))
+          coef_prop[1] <- 1
+          coef_prop[ind_two]   <-  prop_two
+          coef_prop[ind_three] <- prop_three
         }
 
         # Compute AMEs
@@ -189,21 +194,30 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
       if(difference == TRUE){
         for(z in 2:length(marginal_dist_u_list)){
           marginal_dist_u <- marginal_dist_u_list[[z]]
+          joint_dist_u <- joint_dist_u_list[[z]]
+          joint_dist_u_base <- joint_dist_u_list[[1]]
           # Find weights
           if(three_way == FALSE){
             coef_prop <- c(1, as.numeric(as.character(marginal_dist_u[match(estNames, marginal_dist_u[, "level"]), "prop"]))[-1])
             coef_prop0 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estNames, marginal_dist_u_base[, "level"]), "prop"]))[-1])
           }else if(three_way == TRUE){
 
-            coef_prop_1 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,1], marginal_dist_u[, "level"]), "prop"]))[-1])
-            coef_prop_2 <- c(1, as.numeric(as.character(marginal_dist_u[match(estL[,2], marginal_dist_u[, "level"]), "prop"]))[-1])
-            coef_prop_1[is.na(coef_prop_1) == TRUE] <- 1; coef_prop_2[is.na(coef_prop_2) == TRUE] <- 1
-            coef_prop <- coef_prop_1*coef_prop_2
+            ind_two  <- which(apply(estL, 1, function(x) any(is.na(x))))[-1]
+            ind_three  <- which(apply(estL, 1, function(x) all(is.na(x)==FALSE)))
 
-            coef_prop0_1 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estL[,1], marginal_dist_u_base[, "level"]), "prop"]))[-1])
-            coef_prop0_2 <- c(1, as.numeric(as.character(marginal_dist_u_base[match(estL[,2], marginal_dist_u_base[, "level"]), "prop"]))[-1])
-            coef_prop0_1[is.na(coef_prop0_1) == TRUE] <- 1; coef_prop0_2[is.na(coef_prop0_2) == TRUE] <- 1
-            coef_prop0 <- coef_prop0_1*coef_prop0_2
+            prop_two <- marginal_dist_u[match(estL[ind_two,1], marginal_dist_u[, "level"]), "prop"]
+            prop_three <- joint_dist_u[row.match(as.data.frame(estL[ind_three, ]), as.data.frame(joint_dist_u[, 1:2])), "prop"]
+            coef_prop  <- rep(NA, nrow(estL))
+            coef_prop[1] <- 1
+            coef_prop[ind_two]   <-  prop_two
+            coef_prop[ind_three] <- prop_three
+
+            prop_two0 <- marginal_dist_u_base[match(estL[ind_two,1], marginal_dist_u_base[, "level"]), "prop"]
+            prop_three0 <- joint_dist_u_base[row.match(as.data.frame(estL[ind_three, ]), as.data.frame(joint_dist_u_base[, 1:2])), "prop"]
+            coef_prop0  <- rep(NA, nrow(estL))
+            coef_prop0[1] <- 1
+            coef_prop0[ind_two]   <-  prop_two0
+            coef_prop0[ind_three] <- prop_three0
           }
 
           # Compute AMEs
@@ -1095,7 +1109,7 @@ plot_AME <- function(ame.out,
     col <- rep("black",length(unique(ame.out$AME[[1]]$type)))
   }
   if(missing(pch)){
-    pch <- rep(19,length(unique(ame.out$AME[[1]]$type)))
+    pch <- rep(19, length(col))
   }
   if(missing(mar)){
     mar <- 12
@@ -1354,28 +1368,329 @@ coefMake <- function(original_level, cross_int, formula_three_c){
   return(coef_name)
 }
 
-
-#' Estimating PAMCE withithout regularization
-#' @param formula formula
-#' @param data data
-#' @param pair whether we use the paired-conjoint design
-#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
-#' @export
-
-createDist <- function(formula, data){
+createDistBase <- function(formula, data, marginal){
     dataX <- model.frame(formula, data)[,-1]
 
     all_levels <- lapply(dataX, levels)
-    factor_u <-  rep(names(all_levels), unlist(lapply(all_levels, length)))
-    levels_u <- c(unlist(all_levels))
-    prop_u   <- unlist(lapply(dataX, function(x) prop.table(table(x))))
 
-    marginal <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
-    marginal$factor   <- factor_u
-    marginal$levels <- levels_u
-    marginal$prop   <- prop_u
-    return(marginal)
+    if(marginal == TRUE){
+      factor_u <-  rep(names(all_levels), unlist(lapply(all_levels, length)))
+      levels_u <- c(unlist(all_levels))
+      prop_u   <- unlist(lapply(dataX, function(x) prop.table(table(x))))
+
+      target <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+      target$factor   <- factor_u
+      target$levels <- levels_u
+      target$prop   <- prop_u
+      attributes(target)$dist_type <- "marginal"
+
+    }else if(marginal == FALSE){
+      fac_name <- names(all_levels)
+      combMat  <- combn(length(fac_name), 2)
+      target   <- list()
+      for(i in 1:ncol(combMat)){
+        levels_u <- expand.grid(all_levels[[combMat[1, i]]], all_levels[[combMat[2, i]]])
+        factor_u <- cbind(rep(fac_name[combMat[1, i]], nrow(levels_u)), rep(fac_name[combMat[2, i]], nrow(levels_u)))
+        target_0 <- as.data.frame(cbind(factor_u, levels_u))
+        b_tab <- table(dataX[, c(fac_name[combMat[1, i]], fac_name[combMat[2, i]])])
+        b_tab <- b_tab[match(all_levels[[combMat[1, i]]], rownames(b_tab)),]
+        b_tab <- b_tab[, match(all_levels[[combMat[2, i]]], colnames(b_tab))]
+        prop_u   <- c(b_tab)/sum(b_tab)
+        target_0$prop   <- prop_u
+        colnames(target_0) <- c("factor_1", "factor_2", "levels_1", "levels_2", "prop")
+        target[[i]] <- target_0
+        names(target)[[i]] <- paste(fac_name[combMat[1, i]], ":", fac_name[combMat[2, i]], sep = "")
+      }
+      attributes(target)$dist_type <- "joint"
+    }
+    return(target)
 }
 
+createDist0 <- function(formula, data, exp_data, marginal){
+
+  formula_use <- formula(paste("~",  as.character(formula)[3], sep  = ""))
+
+  col_in <- is.element(all.vars(formula_use), colnames(data))
+
+  if(all(col_in) == FALSE){
+    formula_use <- formula(paste("~", paste(all.vars(formula_use)[col_in == TRUE], collapse = "+"), sep = ""))
+  }
+  dataX <- model.frame(formula_use, data)
+
+  all_levels <- lapply(dataX, levels)
+
+  if(marginal == TRUE){
+    # factor_u <-  rep(names(all_levels), unlist(lapply(all_levels, length)))
+    # levels_u <- c(unlist(all_levels))
+    target   <- lapply(dataX, function(x) prop.table(c(table(x))))
+
+    # target <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+    # target$factor   <- factor_u
+    # target$levels <- levels_u
+    # target$prop   <- prop_u
+    attributes(target)$dist_type <- "marginal"
+    attributes(target)$factor <- names(target)
+    attributes(target)$level  <- unlist(all_levels)
+
+  }else if(marginal == FALSE){
+    fac_name <- names(all_levels)
+    combMat  <- combn(length(fac_name), 2)
+    target   <- list()
+    for(i in 1:ncol(combMat)){
+      levels_u <- expand.grid(all_levels[[combMat[1, i]]], all_levels[[combMat[2, i]]])
+      factor_u <- cbind(rep(fac_name[combMat[1, i]], nrow(levels_u)), rep(fac_name[combMat[2, i]], nrow(levels_u)))
+      target_0 <- as.data.frame(cbind(factor_u, levels_u))
+      b_tab <- table(dataX[, c(fac_name[combMat[1, i]], fac_name[combMat[2, i]])])
+      b_tab <- b_tab[match(all_levels[[combMat[1, i]]], rownames(b_tab)),]
+      b_tab <- b_tab[, match(all_levels[[combMat[2, i]]], colnames(b_tab))]
+      prop_u   <- c(b_tab)/sum(b_tab)
+      target_0$prop   <- prop_u
+      colnames(target_0) <- c("factor_1", "factor_2", "levels_1", "levels_2", "prop")
+      target[[i]] <- target_0
+      names(target)[[i]] <- paste(fac_name[combMat[1, i]], ":", fac_name[combMat[2, i]], sep = "")
+    }
+    attributes(target)$dist_type <- "joint"
+    attributes(target)$factor <- fac_name
+    attributes(target)$level  <- unlist(all_levels)
+  }
+  return(target)
+}
+
+
+#' Create Profile Distributions from data.frame
+#' @param formula formula
+#' @param data data.frame
+#' @param marginal Whether we create marginal distributions (TRUE) or the two-dimensional joint distributions
+#' @export
+createDist <- function(formula, target_data, exp_data, type = "marginal"){
+  # Create Distribution based target_data and augment with Experimental Data
+
+  if(type == "marginal"){
+    dist <- createDist0(formula = formula, data = target_data, exp_data = exp_data, marginal = TRUE)
+
+    exp_marginal <- createDist0(formula, data = exp_data, exp_data = exp_data, marginal = TRUE)
+    if(all(is.element(names(exp_marginal), names(dist))) ==  TRUE ){
+      return(dist)
+    }else{
+      dist_new <- exp_marginal
+      for(i in 1:length(exp_marginal)){
+        if(names(exp_marginal)[i] %in% names(dist)){
+          dist_new[[i]] <-  dist[[match(names(exp_marginal)[i], names(dist))]]
+        }
+      }
+      return(dist_new)
+    }
+  }
+
+
+  if(type == "joint"){
+    target_marginal <- createDist0(formula = formula, data = target_data, exp_data = exp_data, marginal = TRUE)
+    dist <- createDist0(formula = formula, data = target_data, exp_data = exp_data, marginal = FALSE)
+    exp_joint <- createDist0(formula, data = exp_data, exp_data  = exp_data, marginal = FALSE)
+
+    if(all(is.element(names(exp_joint), names(dist))) ==  TRUE){
+      return(dist)
+    }else{
+      exp_fac_name  <- attributes(exp_joint)$factor
+      dist_fac_name <- attributes(dist)$factor
+      missing_fac <- which(is.element(exp_fac_name, dist_fac_name) == FALSE)
+      combMat <- combn(seq(1:length(attributes(exp_joint)$factor)), 2)
+      combMat_m <- matrix(combMat %in% missing_fac, nrow = 2)
+      combMat_m_ind <- apply(combMat_m, 2, function(x) any(x == TRUE))
+      dist_new <- exp_joint
+      exp_marginal <- createDist0(formula, data = exp_data, exp_data  = exp_data, marginal = TRUE)
+      for(i in 1:length(exp_joint)){
+        if(combMat_m_ind[i] == FALSE){ # none is missing
+          dist_new[[i]] <-  dist[[match(names(exp_joint)[i], names(dist))]]
+        }else{
+          # if(all(combMat_m[1:2, i] == TRUE))   # both are missing, just use exp_joint
+          if(all(combMat_m[1:2, i]) ==  FALSE){  # when only one is missing
+            if(combMat_m[1, i] == TRUE){ # the first is missing
+              prop_1 <-  exp_marginal[[combMat[1, i]]]
+              prop_2 <-  target_marginal[[match(exp_fac_name[combMat[2, i]],dist_fac_name)]]
+            }else if(combMat_m[2, i] == TRUE){ # the second is missing
+              prop_2 <-  exp_marginal[[combMat[2, i]]]
+              prop_1 <-  target_marginal[[match(exp_fac_name[combMat[1, i]],dist_fac_name)]]
+            }
+            prop_new <- rep(prop_1, times = length(prop_2))*rep(prop_2, each = length(prop_1))
+            dist_new[[i]]$prop <- prop_new
+          }
+        }
+      }
+      return(dist_new)
+    }
+  }
+}
+
+
+Joint2Marginal <- function(joint_dist){
+
+  prop_u_1 <- prop_u_0  <- list()
+  fac_name_1 <- fac_name_0 <- c()
+  for(i in 1:length(joint_dist)){
+    prop_u_0[[i]] <- tapply(joint_dist[[i]]$prop, joint_dist[[i]]$levels_1, sum)
+    prop_u_1[[i]] <- tapply(joint_dist[[i]]$prop, joint_dist[[i]]$levels_2, sum)
+    fac_name_0[i] <- as.character(joint_dist[[i]]$factor_1[1])
+    fac_name_1[i] <- as.character(joint_dist[[i]]$factor_2[1])
+  }
+  fac_name <- c(fac_name_0, fac_name_1)
+  prop_u   <- append(prop_u_0, prop_u_1)
+  prop_u2  <- prop_u[match(unique(fac_name), fac_name)]
+  fac_name2  <- fac_name[match(unique(fac_name), fac_name)]
+
+  names(prop_u2) <- fac_name2
+  target <- prop_u2
+
+  # levels_u <- names(unlist(prop_u2))
+  # factor_u <-  rep(fac_name2, unlist(lapply(prop_u2, length)))
+  #
+  # target <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+  # target$factor   <- factor_u
+  # target$levels <- levels_u
+  # target$prop   <- unlist(prop_u2)
+
+  attributes(target)$dist_type <- "marginal"
+
+  return(target)
+}
+
+Marginal2Joint <- function(marginal_dist){
+
+  # fac_name   <- unique(marginal_dist$factor)
+  #
+  # all_levels <- tapply(marginal_dist$prop, marginal_dist$factor, function(x) x)
+  # all_levels <- all_levels[match(fac_name, names(all_levels))]
+  #
+  # level_names <- tapply(marginal_dist$levels, marginal_dist$factor, function(x) x)
+  # level_names <- level_names[match(fac_name, names(level_names))]
+
+  fac_name  <- names(marginal_dist)
+  all_levels <- marginal_dist
+  level_names <- lapply(marginal_dist, names)
+
+  for(i in 1:length(all_levels)){
+    names(all_levels[[i]]) <- level_names[[i]]
+  }
+  combMat  <- combn(length(fac_name), 2)
+  target   <- list()
+  for(i in 1:ncol(combMat)){
+    levels_u <- expand.grid(level_names[[combMat[1, i]]], level_names[[combMat[2, i]]])
+    factor_u <- cbind(rep(fac_name[combMat[1, i]], nrow(levels_u)), rep(fac_name[combMat[2, i]], nrow(levels_u)))
+    target_0 <- as.data.frame(cbind(factor_u, levels_u))
+    prop_u_0 <- apply(expand.grid(all_levels[[combMat[1, i]]], all_levels[[combMat[2, i]]]), 1, prod)
+    prop_u   <- apply(expand.grid(all_levels[[combMat[1, i]]], all_levels[[combMat[2, i]]]), 1, prod)
+    target_0$prop   <- prop_u
+    colnames(target_0) <- c("factor_1", "factor_2", "levels_1", "levels_2", "prop")
+    target[[i]] <- target_0
+    names(target)[[i]] <- paste(fac_name[combMat[1, i]], ":", fac_name[combMat[2, i]], sep = "")
+  }
+  attributes(target)$dist_type <- "joint"
+
+  return(target)
+}
+
+
+checkDist <- function(check_dist, type = "marginal", formula, data){
+
+  if(type == "marginal"){
+    # if(all(colnames(check_dist) == c("factor", "levels", "prop")) == FALSE){
+    #   stop(" When target_type = marginal, 'colnames' of 'target_dist' should be c('factor', 'levels', 'prop')")
+    # }
+
+    exp_marginal <- createDist(formula = formula, target_data = data, exp_data = data, type = "marginal")
+
+    if(setequal(names(check_dist), names(exp_marginal)) == FALSE){
+      stop(" 'factor' of 'target_dist' should one of factors in 'data' ")
+    }
+    if(setequal(names(unlist(check_dist)), names(unlist(exp_marginal))) == FALSE){
+      stop(" 'levels' of 'target_dist' should one of levels in 'data' ")
+    }
+
+    # reorder factor and levels
+    check_dist <- check_dist[match(names(exp_marginal), names(check_dist))]
+    for(i in 1:length(check_dist)){
+      check_dist[[i]] <- check_dist[[i]][match(names(exp_marginal[[i]]), names(check_dist[[i]]))]
+    }
+  }
+
+  if(type == "joint"){
+    # check factor and level names
+    exp_marginal <- createDist(formula = formula, target_data = data, exp_data = data, type = "marginal")
+    exp_joint <- createDist(formula = formula, target_data = data, exp_data = data, type = "joint")
+    check_dist_name <- list()
+    exp_dist_name <- list()
+
+    if(length(check_dist) != length(exp_joint)){
+      stop(" When target_type = joint, please specify the two dimensional joint distributions for all pairs between factors")
+    }
+
+    for(i in 1:length(check_dist)){
+      if(all(colnames(check_dist[[i]]) == c("factor_1", "factor_2", "levels_1", "levels_2", "prop")) == FALSE){
+        stop(" When target_type = joint, 'colnames' in each element of target_dist should be c('factor_1', 'factor_2', 'levels_1', `levels_2`, 'prop')")
+      }
+
+      if(all(is.element(c(as.character(check_dist[[i]][, c("factor_1")]),
+                          as.character(check_dist[[i]][, c("factor_2")])), attributes(exp_marginal)$factor)) == FALSE){
+        stop(" 'factor_1' and  'factor_2' in each element of target_dist should one of factors in 'data' ")
+      }
+      if(all(is.element(c(as.character(check_dist[[i]][, c("levels_1")]),
+                          as.character(check_dist[[i]][, c("levels_2")])), attributes(exp_marginal)$level)) == FALSE){
+        stop(" 'levels_1' and  'levels_2' in each element of target_dist should one of levels in 'data' ")
+      }
+      check_dist_name[[i]] <- c(unique(as.character(check_dist[[i]][, c("factor_1")])), unique(as.character(check_dist[[i]][, c("factor_2")])))
+      exp_dist_name[[i]] <- c(unique(as.character(exp_joint[[i]][, c("factor_1")])), unique(as.character(exp_joint[[i]][, c("factor_2")])))
+    }
+    # reorder factor-interaction
+    check_reorder <- c()
+    for(i in 1:length(check_dist)){
+      check_reorder[i]  <- which(unlist(lapply(check_dist_name, function(x) setequal(x, exp_dist_name[[i]]))))
+    }
+    check_dist  <- check_dist[check_reorder]
+    names(check_dist) <-  names(exp_joint)
+
+    # Finally reorder factors and levels within each element
+    for(i in 1:length(check_dist)){
+      exp_col <- c(as.character(exp_joint[[i]][1, c("factor_1")]), as.character(exp_joint[[i]][1, c("factor_2")]))
+      check_col <- c(as.character(check_dist[[i]][1, c("factor_1")]), as.character(check_dist[[i]][1, c("factor_2")]))
+      col_ind <- match(exp_col, check_col)
+      check_dist[[i]]  <- cbind(check_dist[[i]][, c(1, 2)[col_ind]], check_dist[[i]][, c(3, 4)[col_ind]], check_dist[[i]][, 5])
+      colnames(check_dist[[i]]) <- c("factor_1", "factor_2", "levels_1", "levels_2",  "prop")
+
+      # Finally reorder factor and levels
+      check_dist[[i]] <- check_dist[[i]][row.match(exp_joint[[i]][, c("factor_1", "factor_2", "levels_1", "levels_2")],
+                                                   check_dist[[i]][, c("factor_1", "factor_2", "levels_1", "levels_2")]),]
+
+      check_dist[[i]]$factor_1 <- as.character(check_dist[[i]]$factor_1)
+      check_dist[[i]]$factor_2 <- as.character(check_dist[[i]]$factor_2)
+      check_dist[[i]]$levels_1 <- as.character(check_dist[[i]]$levels_1)
+      check_dist[[i]]$levels_2 <- as.character(check_dist[[i]]$levels_2)
+    }
+  }
+
+  if(type == "target_data"){
+    if(all(is.element(colnames(check_dist), all.vars(formula))) == FALSE){
+      stop(" When target_type = target_data, 'colnames' in each element of target_dist should be one of the factors in formula")
+    }
+    new_marginal <- createDist(formula = formula, target_data = check_dist, exp_data = data, type = "marginal")
+    exp_marginal <- createDist(formula = formula, target_data = data, exp_data = data, type = "marginal")
+
+    if(all(is.element(attributes(new_marginal)$level, attributes(exp_marginal)$level)) == FALSE){
+      stop(" 'levels' used in 'target_dist' should one of levels in 'data' ")
+    }
+  }
+
+  return(check_dist)
+}
+
+list2data <- function(marginal_dist){
+  levels_u <- unlist(lapply(marginal_dist, names))
+  factor_u <-  rep(names(marginal_dist), unlist(lapply(marginal_dist, length)))
+
+  target <- data.frame(matrix(NA, ncol = 0, nrow = length(factor_u)))
+  target$factor   <- factor_u
+  target$levels <- levels_u
+  target$prop   <- unlist(marginal_dist)
+  return(target)
+}
 
 

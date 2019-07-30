@@ -6,7 +6,7 @@
 \usage{
 AME_estimate_full(formula, formula_three = NULL, data,
   type = "genlasso", ord.fac, pair = FALSE, pair_id = NULL,
-  cross_int = TRUE, cluster = NULL, marginal_dist, marginal_type,
+  cross_int = TRUE, cluster = NULL, target_dist, target_type,
   difference = FALSE, cv.type = "cv.1Std", nfolds = 5, boot = 100,
   seed = 1234, numCores = NULL)
 }
@@ -27,10 +27,6 @@ AME_estimate_full(formula, formula_three = NULL, data,
 
 \item{cluster}{unique identifiers for cluster}
 
-\item{marginal_dist}{Marginal distributions of profiles to be used}
-
-\item{marginal_type}{Names of marginal distributions}
-
 \item{difference}{Whether we compute the difference between different pAMCEs}
 
 \item{cv.type}{(when type =genlasso)  `cv.1Std`` (stronger) or `cv.min` (weaker).}
@@ -38,6 +34,10 @@ AME_estimate_full(formula, formula_three = NULL, data,
 \item{boot}{The number of bootstrap samples}
 
 \item{seed}{Seed for bootstrap}
+
+\item{marginal_dist}{Marginal distributions of profiles to be used}
+
+\item{marginal_type}{Names of marginal distributions}
 }
 \description{
 Estimating the population AMCE using the model-based approach
