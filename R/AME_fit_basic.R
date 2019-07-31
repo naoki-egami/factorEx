@@ -180,8 +180,9 @@ coefIntAME <- function(coefInt, vcovInt, SE = FALSE, marginal_dist, marginal_dis
           # allow for three-ways
           ind_two  <- which(apply(estL, 1, function(x) any(is.na(x))))[-1]
           prop_two <- marginal_dist_u[match(estL[ind_two,1], marginal_dist_u[, "level"]), "prop"]
-          ind_three  <- which(apply(estL, 1, function(x) all(is.na(x)==FALSE)))
-          prop_three <- joint_dist_u[row.match(as.data.frame(estL[ind_three, ]), as.data.frame(joint_dist_u[, 1:2])), "prop"]
+          ind_three  <- which(apply(estL, 1, function(x) all(is.na(x) == FALSE)))
+          prop_three <- joint_dist_u[row.match(as.data.frame(matrix(estL[ind_three, ], ncol = 2)),
+                                               as.data.frame(joint_dist_u[, 1:2])), "prop"]
           coef_prop  <- rep(NA, nrow(estL))
           coef_prop[1] <- 1
           coef_prop[ind_two]   <-  prop_two
