@@ -36,8 +36,6 @@ pAMCE <- function(formula,
                   boot = 100,
                   seed = 1234, numCores = NULL){
 
-  cat("Using version `three-way` :\n")
-
   ###########
   ## Check ##
   ###########
