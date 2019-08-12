@@ -53,7 +53,6 @@ levels(target_data$pos_deficit)  <- levels(dfOnoRep$pos_deficit)
 target_dist <- list(exp_marginal, exp_joint, marginal_rep, marginal_dem,  target_data)
 names(target_dist) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint")
 
-
 ## Need to specify "target_type"; one of "marginal", "joint", and "target_data"
 ## For us, we will only compare "marginal" and "target"
 ## But for illustration, I show everything here

@@ -2,7 +2,7 @@
 #' @param formula Formula
 #' @param formula_three Formula for three-way interactions
 #' @param data Data
-#' @param type "No-Reg" or "genlasso"
+#' @param reg  TRUE (regularization) or FALSE (no regularization)
 #' @param ord.fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
 #' @param pair Whether we use a paired-choice conjoint design
 #' @param cross_int Include interactions across profiles
@@ -10,7 +10,7 @@
 #' @param marginal_dist Marginal distributions of profiles to be used
 #' @param marginal_type Names of marginal distributions
 #' @param difference Whether we compute the difference between different pAMCEs
-#' @param cv.type (when type =genlasso)  `cv.1Std`` (stronger) or `cv.min` (weaker).
+#' @param cv.type (when reg = TRUE)  `cv.1Std`` (stronger) or `cv.min` (weaker).
 #' @param boot The number of bootstrap samples
 #' @param seed Seed for bootstrap
 #' @importFrom prodlim row.match
@@ -19,30 +19,28 @@
 #' @importFrom pbapply pblapply
 #' @import parallel
 #' @import arm
+#' @import genlasso
 #' @export
 
-AME_estimate_full <- function(formula,
-                              formula_three = NULL,
-                              data,
-                              type = "genlasso",
-                              ord.fac,
-                              pair = FALSE, pair_id = NULL, cross_int = TRUE,
-                              cluster = NULL,
-                              target_dist,
-                              target_type,
-                              difference = FALSE,
-                              cv.type = "cv.1Std", nfolds = 5,
-                              boot = 100,
-                              seed = 1234, numCores = NULL){
+pAMCE <- function(formula,
+                  formula_three = NULL,
+                  data,
+                  reg = TRUE,
+                  ord.fac,
+                  pair = FALSE, pair_id = NULL, cross_int = TRUE,
+                  cluster = NULL,
+                  target_dist,
+                  target_type,
+                  difference = FALSE,
+                  cv.type = "cv.1Std", nfolds = 5,
+                  boot = 100,
+                  seed = 1234, numCores = NULL){
 
   cat("Using version `three-way` :\n")
 
   ###########
   ## Check ##
   ###########
-  if((type %in% c("No-Reg", "genlasso")) == FALSE){
-    warning(" 'type' should be 'No-Reg' or 'genalsso' ")
-  }
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
@@ -252,7 +250,7 @@ AME_estimate_full <- function(formula,
 
   }
 
-  if(type == "No-Reg"){
+  if(reg == FALSE){
     out <-  AME_estimate(formula = formula,
                          data = data,
                          pair = pair, pair_id = pair_id, cross_int = cross_int,
@@ -262,25 +260,7 @@ AME_estimate_full <- function(formula,
                          joint_dist = joint_dist,
                          boot = boot,
                          difference = difference, formula_three_c = formula_three_c)
-  # }else if(type == "gash-anova"){
-  #   if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
-  #   out <- AME_estimate_collapse_gash(formula = formula,
-  #                                     data = data,
-  #                                     ord.fac = ord.fac,
-  #                                     pair = pair, pair_id = pair_id,
-  #                                     cluster = cluster,
-  #                                     marginal_dist = marginal_dist,
-  #                                     marginal_type = marginal_type,
-  #                                     difference = difference,
-  #                                     family = family,
-  #                                     nway = nway,
-  #                                     cv.collapse.cost = cv.collapse.cost,
-  #                                     cv.type = cv.type,
-  #                                     boot = boot,
-  #                                     numCores = numCores,
-  #                                     seed = seed)
-  #
-  }else if(type == "genlasso"){
+  }else if(reg == TRUE){
     if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
     out <- AME_estimate_collapse_genlasso(formula = formula,
                                           data = data,
@@ -302,8 +282,8 @@ AME_estimate_full <- function(formula,
 
   ## Approximate F-test
   if(is.null(formula_three_c) == FALSE){
-    if(type != "No-Reg") coef_f <- apply(out$boot_coef, 2, mean)
-    if(type == "No-Reg") coef_f <- out$coef
+    if(reg == TRUE) coef_f <- apply(out$boot_coef, 2, mean)
+    if(reg == FALSE) coef_f <- out$coef
     data_u <- out$input$data
 
     Ftest <- Fthree(formula = formula,
