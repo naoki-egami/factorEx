@@ -2,13 +2,6 @@ rm(list=ls())
 
 ## Please install "genlasso" by yourself
 library(PopCon)
-library(arm)
-library("genlasso")
-library(sandwich)
-library("igraph")
-library(prodlim)
-
-# load data
 load("example/ono_data_cleaned.RData")
 load("example/ono_data_joint_distribution.RData")
 full_joint <- dfJoint
@@ -58,12 +51,102 @@ names(target_dist) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Join
 # ########################################
 # Ono Example
 # ########################################
-sample_s <- 1583*20
+sample_s <- 2000
+
+# ########################
+# Interested in One Factor
+# ########################
+## Unif
+ess_unif <- weightDesign(factor_name = "gender",
+                     target_dist = marginal_rep, randomize_dist = exp_marginal,
+                     sample = sample_s)
+ess_unif$effective_ss
+
+## Pop
+ess_pop <- weightDesign(factor_name = "gender",
+                         target_dist = marginal_rep, randomize_dist = marginal_rep,
+                         sample = sample_s)
+ess_pop$effective_ss
+
+## Mixed
+mixed_marginal <- marginal_rep
+mixed_marginal[["gender"]]  <- exp_marginal[["gender"]]
+ess_mix <- weightDesign(factor_name = "gender",
+                        target_dist = marginal_rep, randomize_dist = mixed_marginal,
+                        sample = sample_s)
+ess_mix$effective_ss
+
+# ########################
+# Interested in K Factors
+# ########################
+ess_unif2 <- AverageESS(factor_all = c("gender",  "race"),  type  =  "Unif", sample_s = 2000,
+                        target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_pop2 <- AverageESS(factor_all = c("gender",  "race"),  type  =  "Pop", sample_s = 2000,
+                       target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_mixed2 <- AverageESS(factor_all = c("gender",  "race"),  type  =  "Mixed", sample_s = 2000,
+                         target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_unif2
+ess_pop2
+ess_mixed2
+
+ess_unif3 <- AverageESS(factor_all = c("gender",  "race",  "pos_security"),  type  =  "Unif", sample_s = 2000,
+                        target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_pop3 <- AverageESS(factor_all = c("gender",  "race", "pos_security"),  type  =  "Pop", sample_s = 2000,
+                       target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_mixed3 <- AverageESS(factor_all = c("gender",  "race", "pos_security"),  type  =  "Mixed", sample_s = 2000,
+                         target_marginal = marginal_rep, exp_marginal  = exp_marginal)
+
+ess_unif3
+ess_pop3
+ess_mixed3
+
+AverageESS <- function(factor_all, type =  "Unif",  sample_s, target_marginal, exp_marginal){
+
+  ## Unif
+  if(type == "Unif"){
+    ess <- c()
+    for(i in  1:length(factor_all)){
+      ess[i] <- weightDesign(factor_name = factor_all[i],
+                             target_dist = target_marginal, randomize_dist = exp_marginal,
+                             sample = sample_s)$effective_ss
+    }
+  }
+
+  if(type == "Pop"){
+    ess <- c()
+    for(i in  1:length(factor_all)){
+      ess[i] <- weightDesign(factor_name = factor_all[i],
+                             target_dist = target_marginal, randomize_dist = target_marginal,
+                             sample = sample_s)$effective_ss
+    }
+  }
+
+  if(type == "Mixed"){
+    ess <- c()
+    mixed_marginal <- target_marginal
+    mixed_marginal[factor_all]  <- exp_marginal[factor_all]
+    for(i in  1:length(factor_all)){
+      ess[i] <- weightDesign(factor_name = factor_all[i],
+                             target_dist = target_marginal, randomize_dist = mixed_marginal,
+                             sample = sample_s)$effective_ss
+    }
+  }
+  return(ess)
+}
+
+
+
+
+
+
 
 # Uniform Randomized Design
-ess1 <- weightDesign(factor_name = "gender", target_dist = marginal_rep, randomize_dist = exp_marginal,
-                     sample = sample_s)
-plot(density(ess1$ss))
+
 
 # Population Randomized Design
 ess2 <- weightDesign(factor_name = "gender", target_dist = marginal_rep, randomize_dist = marginal_rep,

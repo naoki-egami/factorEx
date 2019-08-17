@@ -58,14 +58,13 @@ names(target_dist) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Join
 ## But for illustration, I show everything here
 
 # Without regularization
-ameOut <- AME_estimate_full(formula = as.formula(formula_u),
-                            formula_three = ~  age*family*race + family*experience*party, ## Please insert plausible three-way interactions
-                            data = dfOnoRep, type = "No-Reg",
+ameOut <- pAMCE(formula = as.formula(formula_u),
+                            data = dfOnoRep, reg = FALSE,
                             pair = TRUE, pair_id = dfOnoRep$pair_id,
                             cluster = dfOnoRep$id,
                             target_dist = target_dist,
                             target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
-                            boot = 100)
+                            boot = 10)
 
 # With regularization
 ameOut_reg <- AME_estimate_full(formula = as.formula(formula_u),

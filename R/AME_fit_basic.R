@@ -1470,6 +1470,7 @@ createDist0 <- function(formula, data, exp_data, marginal){
 #' @param data data.frame
 #' @param marginal Whether we create marginal distributions (TRUE) or the two-dimensional joint distributions
 #' @export
+
 createDist <- function(formula, target_data, exp_data, type = "marginal"){
   # Create Distribution based target_data and augment with Experimental Data
 

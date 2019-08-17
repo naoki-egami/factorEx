@@ -18,8 +18,6 @@
 #' @importFrom pbmcapply pbmclapply
 #' @importFrom pbapply pblapply
 #' @import parallel
-#' @import arm
-#' @import genlasso
 #' @export
 
 pAMCE <- function(formula,

@@ -270,6 +270,8 @@ AME_estimate <- function(formula,
   AME <- list()
   for(g in 1:length(unique(table_AME_full$factor))){
     AME[[g]] <- table_AME_full[table_AME_full$factor == unique(table_AME_full$factor)[g], ]
+    AME[[g]]$low.95ci <- AME[[g]]$estimate - 1.96*AME[[g]]$se
+    AME[[g]]$high.95ci <- AME[[g]]$estimate + 1.96*AME[[g]]$se
   }
   names(AME) <- unique(table_AME_full$factor)
   type_all   <- unique(table_AME_full$type)
