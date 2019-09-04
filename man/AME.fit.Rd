@@ -5,8 +5,9 @@
 \title{Estimating PAMCE withithout regularization}
 \usage{
 AME.fit(formula_full, data, pair = FALSE, cross_int = TRUE,
-  marginal_dist, marginal_dist_u_list, marginal_dist_u_base, marginal_type,
-  difference = FALSE)
+  marginal_dist = NULL, marginal_dist_u_list = NULL,
+  marginal_dist_u_base = NULL, joint_dist_u_list = NULL, marginal_type,
+  difference = FALSE, three_way = FALSE, est_AME = TRUE)
 }
 \arguments{
 \item{data}{data}

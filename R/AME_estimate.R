@@ -3,6 +3,7 @@
 #' @param data data
 #' @param pair whether we use the paired-conjoint design
 #' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
+#' @importFrom mvtnorm rmvnorm
 #' @export
 
 AME_estimate <- function(formula,
@@ -11,7 +12,9 @@ AME_estimate <- function(formula,
                          cluster,
                          marginal_dist,
                          marginal_type,
-                         difference = FALSE){
+                         joint_dist = NULL,
+                         boot,
+                         difference = FALSE, formula_three_c){
 
   ###########
   ## Check ##
@@ -53,13 +56,18 @@ AME_estimate <- function(formula,
   ###########
   ## Setup ##
   ###########
-  # Create two-way interaction formula ----------
+  # Create two-way interaction formula (allow for three-ways) ----------
   factor_l <- length(all.vars(formula)[-1])
   combMat <- combn(factor_l,2); intNames <- c()
   for(k in 1:ncol(combMat)){
     intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
   }
-  formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
+  formula_full0 <- paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep="")
+  if(is.null(formula_three_c) == TRUE){
+    formula_full <- as.formula(formula_full0)
+  }else{
+    formula_full <- as.formula(paste(formula_full0, formula_three_c, sep = "+"))
+  }
 
   # Baseline ----------
   baseline <- lapply(model.frame(formula, data=data)[,-1],
@@ -140,12 +148,35 @@ AME_estimate <- function(formula,
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
+  # Incorporate Joint Distribution
+  if(is.null(joint_dist) == TRUE){
+    joint_dist_u_list <- NULL
+  }else{
+    joint_dist_u_list <- list()
+    for(z in 1:length(joint_dist)){
+      temp <- do.call("rbind", joint_dist[[z]])
+      joint_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(temp)))
+      joint_dist_u_list[[z]]$level_1 <- paste(temp[,1], temp[,3],sep="")
+      joint_dist_u_list[[z]]$level_2 <- paste(temp[,2], temp[,4],sep="")
+      joint_dist_u_list[[z]]$prop  <- temp[,5]
+    }
+    joint_dist_u_base <- joint_dist_u_list[[1]]
+  }
+
   # Estimate AMEs ----------
   ## Estimate AMEs from two-ways
-  table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
-                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
-                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
-                          difference = difference, cross_int = cross_int)
+  if(is.null(formula_three_c) == TRUE){
+    table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
+                            marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                            marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                            difference = difference, cross_int = cross_int)
+  }else if(is.null(formula_three_c) == FALSE){
+    table_AME <- coefIntAME(coefInt = coefInt, vcovInt = vcovInt, SE = TRUE,
+                            marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                            marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                            difference = difference, cross_int = cross_int, three_way = TRUE,
+                            joint_dist_u_list = joint_dist_u_list)
+  }
 
   # table_AME <- c()
   # for(m in 1:nrow(marginal_dist_u_base)){
@@ -230,12 +261,17 @@ AME_estimate <- function(formula,
     }
   }
 
+  ##  bootstrap coefficients
+  boot_coef <- rmvnorm(n = boot, mean = coefInt, sigma = vcovInt)
+
 
 
   ## For Each Factor
   AME <- list()
   for(g in 1:length(unique(table_AME_full$factor))){
     AME[[g]] <- table_AME_full[table_AME_full$factor == unique(table_AME_full$factor)[g], ]
+    AME[[g]]$low.95ci <- AME[[g]]$estimate - 1.96*AME[[g]]$se
+    AME[[g]]$high.95ci <- AME[[g]]$estimate + 1.96*AME[[g]]$se
   }
   names(AME) <- unique(table_AME_full$factor)
   type_all   <- unique(table_AME_full$type)
@@ -246,8 +282,9 @@ AME_estimate <- function(formula,
                  "cluster" = cluster_original, "marginal_dist" = marginal_dist,
                  "marginal_type" = marginal_type, "difference" = difference)
 
-  output <- list("AME" = AME, "baseline" = baseline,
+  output <- list("AME" = AME, "baseline" = baseline, "coef" = coefInt,
                  "type_all" = type_all, "type_difference" = type_difference,
+                 "boot_coef" = boot_coef,
                  "input" = input)
   return(output)
 }

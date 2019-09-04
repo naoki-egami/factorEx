@@ -6,283 +6,122 @@ library(PopCon)
 library(arm)
 library(sandwich)
 library("igraph")
-
 library(prodlim)
 
+# load data
 load("example/ono_data_cleaned.RData")
-data <- dfOno
-data <- dfOnoRep
-pair_id <- data$pair_id
-
-lm_1 <- lm(Y ~ pos_abortion, data = data)
-summary(lm_1)
-
-data  <- data[order(data$pair_id), ]
-side <- rep(c(1,0), times = nrow(data)/2)
-data1 <- data[side == 1, ]
-data0 <- data[side == 0, ]
-colnames(data0) <- paste(colnames(data0), "_right", sep = "")
-data_long <- cbind(data1, data0)
-table(data_long$Y, data_long$Y_left)
-
-lm_2 <- lm(Y ~ pos_abortion*pos_abortion_right, data = data_long)
-summary(lm_2)
-
-
-# Specify Formula
-
-
-{formula_orig <- formula
-  fac_size <- length(all.vars(formula)[-1])
-  fac_name_orig <- all.vars(formula)[-1]
-  fac_name <- paste("f_", seq(1:fac_size), "_f", sep = "")
-  formula  <- as.formula(paste("Y ~", paste(fac_name, collapse = "+"), sep = ""))
-  rename_fac <- cbind(all.vars(formula_orig), c("Y", fac_name))
-  colnames(rename_fac) <- c("original", "internal")
-
-  # Rename levels
-  original_level <- lapply(model.frame(formula_orig, data = data)[,-1], FUN = function(x) levels(x))
-  internal_level <- list()
-  for(i in 1:length(original_level)){
-    internal_level[[i]] <- paste("x_", i, "_", seq(1:length(original_level[[i]])), "_x", sep = "")
-  }
-  names(internal_level) <- fac_name
-
-  # Rename data
-  data_orig <- data
-  for(i in 1:fac_size){
-    levels(data[,fac_name_orig[i]]) <- internal_level[[i]]
-  }
-  colnames(data)[match(all.vars(formula_orig), colnames(data))] <- c("Y", fac_name)
-
-  # Rename marginal_dist
-  marginal_dist_orig <- marginal_dist
-  for(z in 1:length(marginal_dist)){
-    for(i in 1:fac_size){
-      temp <- marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],]
-      temp$levels <- internal_level[[i]][match(temp$levels, original_level[[i]])]
-      temp$factor <- rename_fac[(i+1),2]
-      marginal_dist[[z]][marginal_dist[[z]]$factor == rename_fac[(i+1),1],] <- temp
-    }
-  }
-}
-
-
-
-
-factor_l <- length(all.vars(formula)[-1])
-combMat <- combn(factor_l,2); intNames <- c()
-for(k in 1:ncol(combMat)){
-  intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
-}
-formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
-
-formula_full
-
-
-
-
-coefInt["age44 years old:age60 years old"]
-coefInt["age60 years old:age44 years old"]
-
-coefInt["fav_rating70%:fav_rating43%"]
-coefInt["fav_rating43%:fav_rating70%"]
-
-start_time <- Sys.time()
 
 formula_u <- Y ~ age + family + race + experience + trait + party +
   policy_expertise + pos_security + pos_immigrants + pos_abortion +
   pos_deficit + fav_rating + gender
-data <- dfOnoRep
-exp_dist <- createDist(formula_u, data = data)
-marginal_dist <- list(exp_dist)
 
-ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
-                                data = data,
-                                pair = TRUE, pair_id = data$pair_id,
-                                difference = FALSE,
-                                cluster = data$id, cross_int = TRUE,
-                                marginal_dist = exp_dist,
-                                marginal_type = "Exp",
-                                type = "genlasso")
+joint_dist <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "joint")
 
-ameOut_no1$AME
-ameOut_no1$boot_coef
+exp_marginal <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "marginal")
 
-ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
-                                data = data,
-                                pair = TRUE, pair_id = data$pair_id,
-                                difference = FALSE,
-                                cluster = data$id, cross_int = TRUE,
-                                marginal_dist = exp_dist,
-                                marginal_type = "Exp",
-                                type = "No-Reg")
+load("example/ono_data_joint_distribution.RData")
+full_joint <- dfJoint
 
-ameOut_no2$AME
-ameOut_no2$boot_coef
+is.element(all.vars(formula_u), colnames(full_joint))
 
-out1 <- do.call("rbind", ameOut_no1$AME)
-out2 <- do.call("rbind", ameOut_no2$AME)
-
-plot(out1$estimate, out2$estimate)
-abline(0, 1)
-
-names(ameOut_no1)
-out <- ameOut_no1
-## Name Back
-for(i in 1:length(out$AME)){
-  match_level <- match(out$AME[[i]]$level, internal_level[[out$AME[[i]]$factor[1]]])
-  out$AME[[i]]$factor <- rename_fac[,"original"][match(out$AME[[i]]$factor[1], rename_fac[,"internal"])]
-  orignal_use <- original_level[[out$AME[[i]]$factor[1]]]
-  out$AME[[i]]$level <- orignal_use[match_level]
-}
-names(out$AME) <- rename_fac[,"original"][match(names(out$AME), rename_fac[,"internal"])]
-for(i in 1:fac_size){
-  colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
-  for(j in 1:length(internal_level[[i]])){
-    colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
-  }
-}
-
-
-
-
-names(ameOut_no1$input)
-
-
-coef1 <- do.call("rbind", ameOut_no1$AME)
-std <- coef1[coef1$type ==  "STD",  ]
-exp <- coef1[coef1$type ==  "Exp",  ]
-
-plot(coef1[coef1$type ==  "STD",  "estimate"], seq(1:nrow(std)), col = "black", pch = 19)
-segments(coef1[coef1$type ==  "STD",  "low.95ci"], seq(1:nrow(std)),
-         coef1[coef1$type ==  "STD",  "high.95ci"], seq(1:nrow(std)), col = "black")
-points(coef1[coef1$type ==  "Exp",  "estimate"], seq(1:nrow(std)), col = "red", pch = 15)
-segments(coef1[coef1$type ==  "Exp",  "low.95ci"], seq(1:nrow(std)),
-         coef1[coef1$type ==  "Exp",  "high.95ci"], seq(1:nrow(std)), col = "red")
-abline(v = 0, lty = 2)
-
-ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
-                                data = data,
-                                pair = TRUE, pair_id = data$pair_id,
-                                difference = FALSE,
-                                cluster = data$id, cross_int = FALSE,
-                                marginal_dist = exp_dist,
-                                marginal_type = "Exp",
-                                type = "No-Reg")
-
-coef2 <- do.call("rbind", ameOut_no2$AME)
-
-plot(coef2[coef2$type ==  "STD",  "estimate"], coef2[coef2$type ==  "Exp",  "estimate"])
-abline(0, 1)
-
-ameOut_no1 <- AME_estimate_full(formula = as.formula(formula_u),
-                               data = OnoRep,
-                               pair = TRUE, pair_id = OnoRep$pair_id,
-                               difference = FALSE,
-                               cluster = OnoRep$id,
-                               marginal_dist = list(exp_dist),
-                               marginal_type = "Exp",
-                               type = "No-Reg")
-
-ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
-                               data = OnoRep, pair  = FALSE,
-                               # pair = TRUE, pair_id = OnoRep$pair_id,
-                               difference = FALSE,
-                               cluster = OnoRep$id,
-                               marginal_dist = exp_dist,
-                               marginal_type = "Exp",
-                               type = "No-Reg")
-
-ameOut_no1$AME$race
-ameOut_no2$AME$race
-
-decompose_AME(ameOut_no1, factor_name = "race",  level_name = "Black", marginal_diff = c("Exp"))
-
-ameOut_no1$AME$gender
-ameOut_no2$AME$gender
-
-ameOut_no2 <- AME_estimate_full(formula = as.formula(formula_u),
-                               data = OnoRep,
-                               pair = TRUE, pair_id = OnoRep$pair_id, pair_var = c("experience", "gender"),
-                               difference = FALSE,
-                               cluster = OnoRep$id,
-                               marginal_dist = exp_dist,
-                               marginal_type = "Exp",
-                               type = "No-Reg")
-end_time <- Sys.time()
-end_time - start_time
-
-ameOut_no$AME$experience
-ameOut_no2$AME$experience
-
-plot(ameOut_no$AME$experience[,4], ameOut_no2$AME$experience[,4])
-abline(0,1)
-
-data1 <- OnoRep
-formula <- formula_full
-
-# X1 <- model.matrixBayes(formula, data=OnoRep)
-# attr(X1, "assign")
 #
-# Xf <- model.frame(formula, data=data1)
-# Xf <- attr(terms(Xf), "factors")
-# Xf_ind <- c(apply(matrix(Xf[pair_var, ], ncol = ncol(Xf)), 1, function(x) which(x == 1)))
-# X01 <- model.matrix(formula, data=data1)
-# X02 <- model.matrix(formula, data=data2)
-# pair_var_ind <- is.element(attr(X01, "assign"), Xf_ind)
-# X0 <- X01 - X02
-# X0[, pair_var_ind == TRUE] <- X01[, pair_var_ind == TRUE]
-# X <- cbind(1, X0[,-1])
+marginal_rep <- tapply(distList$`Rep Pop`$prop, distList$`Rep Pop`$factor, function(x) x)
+marginal_rep_n <- tapply(distList$`Rep Pop`$levels, distList$`Rep Pop`$factor, function(x) x)
+for(i in 1:length(marginal_rep)){
+  names(marginal_rep[[i]])  <- marginal_rep_n[[i]]
+}
 
-start_time <- Sys.time()
-ameOut_gash <- AME_estimate_full(formula = as.formula(formula_u),
-                                 data = OnoRep,
-                                 pair = TRUE, pair_id = OnoRep$pair_id,
-                                 pair_var = c("gender","experience"),
-                                 difference = FALSE,
-                                 cluster = OnoRep$id,
-                                 marginal_dist = exp_dist,
-                                 marginal_type = "Exp",
-                                 cv.collapse.cost = c(0.01, 0.05),
-                                 type = "gash-anova",
-                                 boot = 10, cv.type = "cv.1Std",
-                                 family = "binomial")
-end_time <- Sys.time()
-end_time - start_time
+marginal_dem <- tapply(distList$`Dem Pop`$prop, distList$`Dem Pop`$factor, function(x) x)
+marginal_dem_n <- tapply(distList$`Dem Pop`$levels, distList$`Dem Pop`$factor, function(x) x)
+for(i in 1:length(marginal_dem)){
+  names(marginal_dem[[i]])  <- marginal_dem_n[[i]]
+}
 
-ameOut_gash$AME$experience
-ameOut_gash$AME$experience
+# Experimental Marginal Distribution
+exp_marginal <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "marginal")
 
-start_time <- Sys.time()
-ameOut_gen <- AME_estimate_full(formula = as.formula(formula_u),
-                                 data = OnoRep,
-                                 pair = TRUE, pair_id = OnoRep$pair_id, pair_var = c("gender","experience"),
-                                 difference = FALSE,
-                                 cluster = OnoRep$id,
-                                 marginal_dist = exp_dist,
-                                 marginal_type = "Exp",
-                                 type = "genlasso",
-                                 boot = 100, cv.type = "cv.min", seed = 200)
-end_time <- Sys.time()
-end_time - start_time
+# Experimental Joint Distribution
+exp_joint <- createDist(formula_u, target_data = dfOnoRep, exp_data  = dfOnoRep, type = "joint")
 
-ameOut_gen$AME$experience
-ameOut_gen$AME$experience
+# Target Data
+target_data <- full_joint[, is.element(colnames(full_joint), all.vars(formula_u)) == TRUE]
 
-## ---------------------------------------------
-## Investigate Conditional Effects Directly
-## ----------------------------------------------
-cAME_gen <- cAME_from_boot(ameOut_gen, factor_name = "gender", level_name = "Male", difference = FALSE)
+## Need to have the same level names
+levels(target_data$age)  <-  levels(dfOnoRep$age)
+levels(target_data$race) <-  levels(dfOnoRep$race)
+levels(target_data$experience)   <- levels(dfOnoRep$experience)
+levels(target_data$pos_security) <- levels(dfOnoRep$pos_security)
+levels(target_data$pos_deficit)  <- levels(dfOnoRep$pos_deficit)
 
-plot_cAME(cAME_gen,
-          factor_name = c("age", "family", "race",
-                          "experience", "trait",
-                          "policy_expertise", "pos_security", "pos_immigrants",
-                          "pos_abortion","pos_deficit", "fav_rating",
-                          "party"),
-          col = c("black"),
-          legend_pos = "topright",
-          plot_all = FALSE,
-          plot_difference = "no",
-          cex = 1, mar = 10)
+target_dist2 <- list(exp_marginal, exp_joint, marginal_rep, marginal_dem,  target_data)
+names(target_dist2) <- c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint")
+
+ameOut <- AME_estimate_full(formula = as.formula(formula_u),
+                            formula_three = ~  age*family*race,
+                            data = dfOnoRep, type = "No-Reg",
+                            pair = TRUE, pair_id = dfOnoRep$pair_id,
+                            cluster = dfOnoRep$id,
+                            target_dist = target_dist2,
+                            target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
+                            boot = 100)
+
+ameOut_reg <- AME_estimate_full(formula = as.formula(formula_u),
+                                formula_three = ~  age*family*race,
+                                data = dfOnoRep, type = "genlasso",
+                                pair = TRUE, pair_id = dfOnoRep$pair_id,
+                                cluster = dfOnoRep$id,
+                                target_dist = target_dist2,
+                                target_type = c("marginal", "joint", "marginal", "marginal" , "target_data"),
+                                boot = 100)
+
+base <- do.call("rbind", ameOut$AME)
+base_reg <- do.call("rbind", ameOut_reg$AME)
+ameOut_reg$AME
+plot(base[, "estimate"], base_reg[, "estimate"])
+
+plot(base[base$type  == "STD", "estimate"], base_reg[base_reg$type  == "STD", "estimate"])
+abline(0, 1)
+
+
+plot(base[base$type  == "Exp_Mar", "estimate"], base_reg[base_reg$type  == "Exp_Mar", "estimate"])
+abline(0, 1)
+
+plot(base[base$type  == "STD", "se"], base_reg[base_reg$type  == "STD", "se"])
+abline(0, 1)
+
+# Figure 1: Estimates of AMCE
+plot_AME(ameOut, factor_name = c("gender", "race"),
+         plot_difference = "none",
+         plot_type  = c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint"),
+         col = c("black",  "gray", "red", "blue", "green"))
+
+plot_AME(ameOut_reg, factor_name = c("gender", "race"),
+         plot_difference = "none",
+         plot_type  = c("Exp_Mar", "Exp-Joint", "Rep_Mar", "Dem_Mar", "Full-Joint"),
+         col = c("black",  "gray", "red", "blue", "green"))
+
+# Figure 2: Decompose Bias
+plot_decompose(ameOut, factor_name = "gender", level_name = "Male",
+               marginal_diff = c("Exp", "Exp-Joint"))
+
+plot_decompose(ameOut, factor_name = "race", level_name = "Black",
+               marginal_diff = c("Rep Pop", "Exp"))
+
+# Note: the last row is the across-profile interaction with the same factor
+
+# Note: trait has zero effect because "Exp" and "Rep Pop" use the same marginals
+marginal_dist[[1]][marginal_dist[[1]]$fac == "trait", ]
+marginal_dist[[2]][marginal_dist[[1]]$fac == "trait", ]
+
+
+# Figure 3: Conditional Effect plots
+cAME_gender <- cAME_from_boot(ameOut, factor_name = "gender", level_name = "Male", difference = TRUE)
+plot_cAME(cAME_gender, factor_name = c(setdiff(all.vars(formula_u), c("Y", "gender")), "gender"),
+          marginal_prop = c("Exp", "Rep Pop"), marginal_effect = "Exp", col = c("black", "red"))
+## the last row is the across-profile interaction with the same factor
+
+cAME_raceB <- cAME_from_boot(ameOut, factor_name = "race", level_name = "Black", difference = TRUE)
+plot_cAME(cAME_raceB, factor_name = c(setdiff(all.vars(formula_u), c("Y", "race")), "race"),
+          marginal_prop = c("Exp", "Rep Pop"), marginal_effect = "Exp", col = c("black", "red"))
+
+## Note: if there are too many, focus on a few factors that matter

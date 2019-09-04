@@ -6,7 +6,7 @@
 \usage{
 AME_estimate(formula, data, pair = FALSE, pair_id = NULL,
   cross_int = TRUE, cluster, marginal_dist, marginal_type,
-  difference = FALSE)
+  joint_dist = NULL, boot, difference = FALSE, formula_three_c)
 }
 \arguments{
 \item{formula}{formula}

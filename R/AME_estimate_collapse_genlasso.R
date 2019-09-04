@@ -15,6 +15,8 @@ AME_estimate_collapse_genlasso <- function(formula,
                                            cluster = NULL,
                                            marginal_dist,
                                            marginal_type,
+                                           joint_dist,
+                                           formula_three_c,
                                            difference = FALSE,
                                            cv.type = "cv.1Std",
                                            nfolds = 2,
@@ -60,13 +62,8 @@ AME_estimate_collapse_genlasso <- function(formula,
   ###########
   ## Setup ##
   ###########
-  # Create two-way interaction formula ----------
+  # foctorl number  ----------
   factor_l <- length(all.vars(formula)[-1])
-  combMat <- combn(factor_l,2); intNames <- c()
-  for(k in 1:ncol(combMat)){
-    intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
-  }
-  formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
 
   # Baseline ----------
   baseline <- lapply(model.frame(formula, data=data)[,-1],
@@ -97,6 +94,22 @@ AME_estimate_collapse_genlasso <- function(formula,
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
+  if(is.null(joint_dist) == TRUE){
+    joint_dist_u_list <- NULL
+  }else{
+    joint_dist_u_list <- list()
+    for(z in 1:length(joint_dist)){
+      temp <- do.call("rbind", joint_dist[[z]])
+      joint_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(temp)))
+      joint_dist_u_list[[z]]$level_1 <- paste(temp[,1], temp[,3],sep="")
+      joint_dist_u_list[[z]]$level_2 <- paste(temp[,2], temp[,4],sep="")
+      joint_dist_u_list[[z]]$prop  <- temp[,5]
+    }
+  }
+
+  # three-way
+  three_way <- is.null(formula_three_c) == FALSE
+
   # base (just keep track of names)
   fitAME_base <- AME.fit(formula = formula,
                          data = data, pair = pair, cross_int = cross_int,
@@ -104,11 +117,12 @@ AME_estimate_collapse_genlasso <- function(formula,
                          marginal_dist_u_list = marginal_dist_u_list,
                          marginal_dist_u_base = marginal_dist_u_base,
                          marginal_type = marginal_type,
-                         difference = difference)
+                         difference = difference,
+                         three_way = three_way, est_AME = TRUE)
 
   tableAME_base <- fitAME_base$table_AME
   tableAME_base$estimate <- NULL
-  coefAME_base  <- coefMake(original_level, cross_int = cross_int)
+  coefAME_base  <- coefMake(original_level, cross_int = cross_int, formula_three_c = formula_three_c)
 
   # Collapsing
   if(pair == TRUE)  data$pair_id <- pair_id
@@ -123,12 +137,14 @@ AME_estimate_collapse_genlasso <- function(formula,
                                                      fac.level = fac.level, ord.fac = ord.fac,
                                                      marginal_dist = marginal_dist,
                                                      marginal_type = marginal_type,
+                                                     joint_dist_u_list =  joint_dist_u_list,
+                                                     formula_three_c = formula_three_c,
                                                      difference = difference,
                                                      boot = boot,
                                                      cv.type = cv.type,
                                                      nfolds = nfolds,
                                                      tableAME_base = tableAME_base,
-                                                     coefAME_base_l = length(coefAME_base),
+                                                     coefAME_base_l = coefAME_base,
                                                      eps = eps,
                                                      numCores = numCores,
                                                      seed = seed)

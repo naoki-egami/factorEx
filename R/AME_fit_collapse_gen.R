@@ -6,6 +6,8 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 nfolds = 2,
                                                 marginal_dist,
                                                 marginal_type,
+                                                joint_dist_u_list,
+                                                formula_three_c,
                                                 difference = FALSE,
                                                 boot = 100,
                                                 tableAME_base,
@@ -21,7 +23,22 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   for(k in 1:ncol(combMat)){
     intNames[k] <- paste(all.vars(formula)[-1][combMat[1,k]], "*", all.vars(formula)[-1][combMat[2,k]], sep = "")
   }
-  formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
+  # formula_full <- as.formula(paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep=""))
+  formula_full0 <- paste(all.vars(formula)[1], "~", paste(intNames, collapse = "+"), sep="")
+  if(is.null(formula_three_c) == TRUE){
+    formula_full <- as.formula(formula_full0)
+    combMat3 <- NULL
+
+  }else{
+    formula_full <- as.formula(paste(formula_full0, formula_three_c, sep = "+"))
+
+    bterm <- terms(as.formula(paste("~", formula_three_c, sep = "")))
+    bterm2 <- attr(bterm, "factors")[, attr(bterm, "order") == 3]
+    row_num <- match(rownames(attr(bterm, "factors")), all.vars(formula)[-1])
+    combMat3 <- row_num*bterm2
+    if(is.matrix(combMat3)==TRUE) combMat3 <- apply(combMat3, 2, function(x) sort(x[x!=0]))
+    else{ combMat3 <- matrix(sort(combMat3), ncol = 1, nrow = 3)}
+  }
 
   # setup beta weights
   beta_weight <- makeWeight(formula = formula, data = data, pair = pair,
@@ -54,7 +71,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
   cat("\nBootstrap:\n")
   fit.mat  <- c()
-  coef.mat <- matrix(NA, nrow = boot, ncol = coefAME_base_l)
+  coef.mat <- matrix(NA, nrow = boot, ncol = length(coefAME_base_l))
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
 
 
@@ -72,11 +89,14 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                     data = data,
                     pair = pair, cross_int = cross_int,
                     fac.level = fac.level, ord.fac = ord.fac,
+                    combMat3 = combMat3,
                     lambda = lambda,
                     marginal_dist = marginal_dist,
                     marginal_type = marginal_type,
+                    joint_dist_u_list =  joint_dist_u_list,
                     difference = difference,
                     tableAME_base = tableAME_base,
+                    coefAME_base_l =  coefAME_base_l,
                     eps = eps,
                     beta_weight = beta_weight,
                     all_eq = all_eq,
@@ -103,11 +123,14 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                         data = data,
                                         pair = pair, cross_int = cross_int,
                                         fac.level = fac.level, ord.fac = ord.fac,
+                                        combMat3 = combMat3,
                                         lambda = lambda,
                                         marginal_dist = marginal_dist,
                                         marginal_type = marginal_type,
+                                        joint_dist_u_list =  joint_dist_u_list,
                                         difference = difference,
                                         tableAME_base = tableAME_base,
+                                        coefAME_base_l =  coefAME_base_l,
                                         eps = eps,
                                         beta_weight = beta_weight,
                                         all_eq = all_eq,
@@ -127,11 +150,14 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                                 data = data,
                                                                 pair = pair, cross_int = cross_int,
                                                                 fac.level = fac.level, ord.fac = ord.fac,
+                                                                combMat3 = combMat3,
                                                                 lambda = lambda,
                                                                 marginal_dist = marginal_dist,
                                                                 marginal_type = marginal_type,
+                                                                joint_dist_u_list =  joint_dist_u_list,
                                                                 difference = difference,
                                                                 tableAME_base = tableAME_base,
+                                                                coefAME_base_l =  coefAME_base_l,
                                                                 eps = eps,
                                                                 beta_weight = beta_weight,
                                                                 all_eq = all_eq,
@@ -141,7 +167,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
 
   for(b in 1:boot){
-    coef.mat[b, 1:coefAME_base_l] <- fit_boot[[b]]$coef
+    coef.mat[b, 1:length(coefAME_base_l)] <- fit_boot[[b]]$coef
     fit.mat <- cbind(fit.mat, fit_boot[[b]]$tableAME_full[,4])
   }
   fit <- fit_boot[[1]]$tableAME_full
@@ -204,11 +230,14 @@ crossFitPar <- function(x,
                         data,
                         pair, cross_int,
                         fac.level, ord.fac,
+                        combMat3,
                         lambda,
                         marginal_dist,
                         marginal_type,
+                        joint_dist_u_list,
                         difference,
                         tableAME_base,
+                        coefAME_base_l,
                         eps,
                         beta_weight,
                         all_eq,
@@ -230,11 +259,14 @@ crossFitPar <- function(x,
                                    data = data_boot,
                                    pair = pair, cross_int = cross_int,
                                    fac.level = fac.level, ord.fac = ord.fac,
+                                   combMat3 = combMat3,
                                    lambda = lambda,
                                    marginal_dist = marginal_dist,
                                    marginal_type = marginal_type,
+                                   joint_dist_u_list =  joint_dist_u_list,
                                    difference = difference,
                                    tableAME_base = tableAME_base,
+                                   coefAME_base_l = coefAME_base_l,
                                    eps = eps,
                                    beta_weight = beta_weight,
                                    seed_use = seed.b)
@@ -245,13 +277,16 @@ AME.collapse.gen.crossfit <- function(formula,
                                       formula_full,
                                       data,
                                       pair=FALSE, cross_int,
+                                      combMat3 = NULL,
                                       lambda,
                                       fac.level,
                                       ord.fac,
                                       marginal_dist,
                                       marginal_type,
+                                      joint_dist_u_list,
                                       difference = FALSE,
                                       tableAME_base,
+                                      coefAME_base_l,
                                       eps,
                                       beta_weight,
                                       seed_use){
@@ -282,8 +317,10 @@ AME.collapse.gen.crossfit <- function(formula,
                                      pair = pair, cross_int = cross_int,
                                      marginal_dist = marginal_dist,
                                      marginal_type = marginal_type,
+                                     joint_dist_u_list =  joint_dist_u_list,
                                      tableAME_base = tableAME_base,
-                                     difference = difference)
+                                     coefAME_base_l = coefAME_base_l,
+                                     difference = difference, combMat3 = combMat3)
 
   tableAME_1 <- fitAME_1$tableAME_new
   coefAME_1  <- fitAME_1$coef
@@ -302,8 +339,10 @@ AME.collapse.gen.crossfit <- function(formula,
                                      pair = pair, cross_int = cross_int,
                                      marginal_dist = marginal_dist,
                                      marginal_type = marginal_type,
+                                     joint_dist_u_list =  joint_dist_u_list,
                                      tableAME_base = tableAME_base,
-                                     difference = difference)
+                                     coefAME_base_l =  coefAME_base_l,
+                                     difference = difference, combMat3 = combMat3)
 
   tableAME_2 <- fitAME_2$tableAME_new
   coefAME_2  <- fitAME_2$coef
@@ -392,8 +431,11 @@ fit.after.collapse.gen <- function(formula_full,
                                    pair=FALSE, cross_int,
                                    marginal_dist,
                                    marginal_type,
+                                   joint_dist_u_list,
                                    tableAME_base,
-                                   difference = FALSE){
+                                   coefAME_base_l,
+                                   difference = FALSE,
+                                   combMat3 = NULL){
 
   original_level <- lapply(model.frame(formula_full, data = newdata)[,-1], levels)
 
@@ -405,25 +447,29 @@ fit.after.collapse.gen <- function(formula_full,
   collapse_level_name <- lapply(model.frame(formula_full, c_data_mar$data_new)[,-1], levels)
 
   # Transform marginal_dist (for internal simplisity) ----------
-  marginal_dist_c <- c_data_mar$marginal_dist_new
   marginal_dist_u_list <- list()
-  for(z in 1:length(marginal_dist_c)){
-    marginal_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(marginal_dist_c[[z]])))
-    marginal_dist_u_list[[z]]$level <- paste(marginal_dist_c[[z]][,1], marginal_dist_c[[z]][,2],sep="")
-    marginal_dist_u_list[[z]]$prop  <- marginal_dist_c[[z]][,3]
+  for(z in 1:length(marginal_dist)){
+    marginal_dist_u_list[[z]] <- data.frame(matrix(NA, ncol=0, nrow=nrow(marginal_dist[[z]])))
+    marginal_dist_u_list[[z]]$level <- paste(marginal_dist[[z]][,1], marginal_dist[[z]][,2],sep="")
+    marginal_dist_u_list[[z]]$prop  <- marginal_dist[[z]][,3]
   }
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
+  three_way <- is.null(combMat3) == FALSE
 
+  # Just Get Coefficients
   fitAME <- AME.fit(formula_full,
                     data = c_data_mar$data_new, pair = pair, cross_int = cross_int,
-                    marginal_dist = marginal_dist_c,
-                    marginal_dist_u_list = marginal_dist_u_list,
-                    marginal_dist_u_base = marginal_dist_u_base,
-                    marginal_type = marginal_type,
-                    difference = difference)
+                    marginal_dist = NULL,
+                    marginal_dist_u_list = NULL,
+                    marginal_dist_u_base = NULL,
+                    marginal_type = NULL,
+                    difference = difference,
+                    three_way = three_way,
+                    joint_dist_u_list = NULL,
+                    est_AME = FALSE)
 
-  tableAME <- fitAME$table_AME
+  # tableAME <- fitAME$table_AME
   coefAME  <- fitAME$coef
   ind_b    <- fitAME$ind_b
 
@@ -438,11 +484,13 @@ fit.after.collapse.gen <- function(formula_full,
     ## coefAME_m0 <- c(rep(0, times = sum(collapse_level[[z]] == 1) - 1), coefAME_sub[collapse_level[[z]] - 1]) (only for ordered collapsing)
     coefAME_main <- c(coefAME_main, coefAME_m0)
   }
-  # For Interaction effects (within profiles)
+
+  # For Two-way Interaction effects (within profiles)
+  start <- n_fac
   combMat <- combn(n_fac, 2)
   coefAME_int <- c()
   for(z in 1:ncol(combMat)){
-    coefAME_sub <- coefAME[ind_b == (z + n_fac)]
+    coefAME_sub <- coefAME[ind_b == (z + start)]
     c_1 <- seq(from = 2, to = max(collapse_level[[combMat[1,z]]]))
     c_2 <- seq(from = 2, to = max(collapse_level[[combMat[2,z]]]))
     c_ind <- paste(rep(c_1, times = length(c_2)), rep(c_2, each = length(c_1)), sep = "_")
@@ -455,13 +503,44 @@ fit.after.collapse.gen <- function(formula_full,
     coefAME_int <- c(coefAME_int, coefAME_i0)
   }
   coefAME_long <- c(coefAME_main, coefAME_int)
+  start <- start + ncol(combMat)
+
+  # For Three-way Interaction effects (within profiles)
+  if(three_way == TRUE){
+
+    coefAME_int3 <- c()
+    for(z in 1:ncol(combMat3)){
+      coefAME_sub <- coefAME[ind_b == (z + start)]
+      c_1 <- seq(from = 2, to = max(collapse_level[[combMat3[1,z]]]))
+      c_2 <- seq(from = 2, to = max(collapse_level[[combMat3[2,z]]]))
+      c_3 <- seq(from = 2, to = max(collapse_level[[combMat3[3,z]]]))
+      c_ind <- paste(rep(c_1, times = length(c_2)), rep(c_2, each = length(c_1)), sep = "_")
+
+      c_ind <- paste(rep(c_1, times = (length(c_2)*length(c_3))),
+                     rep(rep(c_2, each = length(c_1)), times = length(c_3)),
+                     rep(c_3, each = (length(c_1)*length(c_2))),
+                     sep = "_")
+      l_1 <- collapse_level[[combMat3[1,z]]][-1]
+      l_2 <- collapse_level[[combMat3[2,z]]][-1]
+      l_3 <- collapse_level[[combMat3[3,z]]][-1]
+      l_ind <- paste(rep(l_1, times = (length(l_2)*length(l_3))),
+                     rep(rep(l_2, each = length(l_1)), times = length(l_3)),
+                     rep(l_3, each = (length(l_1)*length(l_2))),
+                     sep = "_")
+
+      coefAME_i0 <- coefAME_sub[match(l_ind, c_ind)]
+      coefAME_i0[is.na(coefAME_i0)] <- 0
+      coefAME_int3 <- c(coefAME_int3, coefAME_i0)
+    }
+    coefAME_long <- c(coefAME_long, coefAME_int3)
+    start <- start + ncol(combMat3)
+  }
 
   # For Interaction effects (within profiles)
   if(cross_int == TRUE){
-    main_int <- n_fac + ncol(combMat)
     coefAME_cross_int <- c()
     for(z in 1:n_fac){
-      coefAME_sub <- coefAME[ind_b == (z + main_int)]
+      coefAME_sub <- coefAME[ind_b == (z + start)]
       c_1 <- c_2 <- seq(from = 2, to = max(collapse_level[[z]]))
       c_ind <- paste(rep(c_1, times = length(c_2)), rep(c_2, each = length(c_1)), sep = "_")
 
@@ -475,24 +554,33 @@ fit.after.collapse.gen <- function(formula_full,
     coefAME_long <- c(coefAME_long, coefAME_cross_int)
   }
 
-  # Expand
-  type_l <- length(unique(tableAME_base$type))
-  fac_name <- unique(tableAME_base$factor)
-  tableAME_new <- matrix(NA, nrow = 0, ncol = 5)
-  for(z in 1:length(fac_name)){
-    tableAME_sub  <- tableAME[tableAME$factor == fac_name[z],]
-    tableAME_sub$level_num <- match(tableAME_sub$level, collapse_level_name[[fac_name[z]]])
+  names(coefAME_long) <- coefAME_base_l
 
-    tableAME_base_sub <- tableAME_base[tableAME_base$factor == fac_name[z],]
-    tableAME_base_sub$level_num <- collapse_level[[fac_name[z]]][match(tableAME_base_sub$level, original_level[[fac_name[z]]])]
+  # Estimate after Expand
+  tableAME_new <- coefIntAME(coefInt = coefAME_long, vcovInt = NULL, SE = FALSE,
+                          marginal_dist = marginal_dist, marginal_dist_u_list = marginal_dist_u_list,
+                          marginal_dist_u_base = marginal_dist_u_base, marginal_type = marginal_type,
+                          difference = difference, cross_int = cross_int, three_way = three_way,
+                          joint_dist_u_list = joint_dist_u_list)
 
-    tableAME_use <- merge(tableAME_base_sub, tableAME_sub[, c("type", "level_num", "estimate")],
-                          by = c("type", "level_num"), all.x = TRUE, all.y = FALSE)
-    tableAME_use <- tableAME_use[row.match(tableAME_base_sub[, c("type", "level")], tableAME_use[, c("type", "level")]), ]
-    tableAME_use$estimate[tableAME_use$level_num == 1] <- 0
-    tableAME_new <- rbind(tableAME_new, tableAME_use)
-  }
-  tableAME_new$level_num <- NULL
+  # Expand (tableAME)
+  # type_l <- length(unique(tableAME_base$type))
+  # fac_name <- unique(tableAME_base$factor)
+  # tableAME_new <- matrix(NA, nrow = 0, ncol = 5)
+  # for(z in 1:length(fac_name)){
+  #   tableAME_sub  <- tableAME[tableAME$factor == fac_name[z],]
+  #   tableAME_sub$level_num <- match(tableAME_sub$level, collapse_level_name[[fac_name[z]]])
+  #
+  #   tableAME_base_sub <- tableAME_base[tableAME_base$factor == fac_name[z],]
+  #   tableAME_base_sub$level_num <- collapse_level[[fac_name[z]]][match(tableAME_base_sub$level, original_level[[fac_name[z]]])]
+  #
+  #   tableAME_use <- merge(tableAME_base_sub, tableAME_sub[, c("type", "level_num", "estimate")],
+  #                         by = c("type", "level_num"), all.x = TRUE, all.y = FALSE)
+  #   tableAME_use <- tableAME_use[row.match(tableAME_base_sub[, c("type", "level")], tableAME_use[, c("type", "level")]), ]
+  #   tableAME_use$estimate[tableAME_use$level_num == 1] <- 0
+  #   tableAME_new <- rbind(tableAME_new, tableAME_use)
+  # }
+  # tableAME_new$level_num <- NULL
 
 
   out <- list("tableAME_new" = tableAME_new, "coef" = coefAME_long)
