@@ -1,10 +1,10 @@
 Package: PopCon
 Type: Package
-Title: Estimating Population Average Marginal Component Effects
-Version: 0.2.1
-Author: Naoki Egami
-Maintainer: Naoki Egami <negami@princeton.edu>
-Description: Estimating Population Average Marginal Component Effects
+Title: Design and Analysis for Population Average Marginal Component Effects
+Version: 1.0.0
+Author: Naoki Egami, Brandon de la Cuesta, Kosuke Imai
+Maintainer: Naoki Egami <naoki.egami5@gmail.com>
+Description: Provides design-based and model-based estimators for the population average marginal component effects in general factorial experiments, including conjoint analysis.The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai(2019).
 License: GPL-2
 Encoding: UTF-8
 LazyData: true

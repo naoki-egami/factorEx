@@ -59,7 +59,7 @@ sample_s <- 2000
 ## Unif
 ess_unif <- weightDesign(factor_name = "gender",
                      target_dist = marginal_rep, randomize_dist = exp_marginal,
-                     sample = sample_s)
+                     sample = sample_s, )
 ess_unif$effective_ss
 
 ## Pop

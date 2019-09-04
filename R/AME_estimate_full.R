@@ -1,18 +1,20 @@
 #' Estimating the population AMCE using the model-based approach
 #' @param formula Formula
-#' @param formula_three Formula for three-way interactions
+#' @param formula_three Formula for three-way interactions (optional)
 #' @param data Data
-#' @param reg  TRUE (regularization) or FALSE (no regularization)
-#' @param ord.fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
+#' @param reg  TRUE (regularization) or FALSE (no regularization). Default is TRUE
+#' @param ord_fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
 #' @param pair Whether we use a paired-choice conjoint design
-#' @param cross_int Include interactions across profiles
-#' @param cluster unique identifiers for cluster
-#' @param marginal_dist Marginal distributions of profiles to be used
-#' @param marginal_type Names of marginal distributions
-#' @param difference Whether we compute the difference between different pAMCEs
-#' @param cv.type (when reg = TRUE)  `cv.1Std`` (stronger) or `cv.min` (weaker).
-#' @param boot The number of bootstrap samples
-#' @param seed Seed for bootstrap
+#' @param cross_int Include interactions across profiles. Default is FALSE
+#' @param cluster Unique identifiers for computing cluster standard errors
+#' @param target_dist Target profile distributions to be used. This argument should be `list`
+#' @param target_type Types of target profile distributions. `marginal` or `target_data`. See Examples for details
+#' @param difference Whether we compute the differences between the multiple pAMCEs. Default is FALSE.
+#' @param cv_type (optimal only when `reg = TRUE``)  `cv.1Std`` (stronger regularization; default) or `cv.min` (weaker regularization).
+#' @param nfolds Number of cross validation folds. Default is 5.
+#' @param boot The number of bootstrap samples.
+#' @param seed Seed for bootstrap.
+#' @param numCores Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.
 #' @importFrom prodlim row.match
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @importFrom pbmcapply pbmclapply
@@ -24,19 +26,19 @@ pAMCE <- function(formula,
                   formula_three = NULL,
                   data,
                   reg = TRUE,
-                  ord.fac,
-                  pair = FALSE, pair_id = NULL, cross_int = TRUE,
+                  ord_fac,
+                  pair = FALSE, pair_id = NULL, cross_int = FALSE,
                   cluster = NULL,
                   target_dist,
                   target_type,
                   difference = FALSE,
-                  cv.type = "cv.1Std", nfolds = 5,
+                  cv_type = "cv.1Std", nfolds = 5,
                   boot = 100,
                   seed = 1234, numCores = NULL){
 
-  ###########
-  ## Check ##
-  ###########
+  ##################
+  ## HouseKeeping ##
+  ##################
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
   if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
@@ -44,8 +46,8 @@ pAMCE <- function(formula,
     target_type <- rep("marginal", length(target_dist))
   }
 
-  if(all(target_type %in% c("marginal", "joint", "target_data")) == FALSE){
-    warning(" 'target_type' should be 'marginal', 'joint' or 'target_data' ")
+  if(all(target_type %in% c("marginal", "target_data")) == FALSE){
+    warning(" 'target_type' should be 'marginal' or 'target_data' ")
   }
 
   if(length(target_type) != length(target_dist)){
@@ -63,17 +65,14 @@ pAMCE <- function(formula,
   }
   if(is.null(numCores)) numCores <- detectCores() - 1
 
-  ###########
-  ## Check ##
-  ###########
   if(any(is.na(data))==TRUE){
-    stop("Remove NA before using this function.")
+    stop("Remove NA before using the function.")
   }
   if(pair==TRUE & is.null(pair_id)==TRUE){
     stop("When 'pair=TRUE', specify 'pair_id'.")
   }
   if(pair==TRUE & all(table(pair_id)==2)==FALSE){
-    stop("When 'pair=TRUE', each of 'pair_id' should have two observations")
+    stop("When 'pair=TRUE', each of 'pair_id' should have two observations.")
   }
   if(is.null(pair_id) == FALSE) pair <- TRUE
 
@@ -81,15 +80,8 @@ pAMCE <- function(formula,
     cross_int <- FALSE
   }
 
-  # if(is.null(pair_var) == FALSE){
-  #   if(all(is.element(pair_var, all.vars(formula))) == FALSE){
-  #     stop(" 'pair_var' should be variables listed in 'formula' ")}
-  #   if(pair == FALSE){
-  #     stop(" 'pair_var' is ignored when 'pair=FALSE' ")}
-  # }
-
-  if(difference==TRUE & length(target_dist) < 2){
-    stop("if 'difference = TRUE', target_dist should contain more than one distribution.")
+  if(difference == TRUE & length(target_dist) < 2){
+    stop("if 'difference = TRUE', 'target_dist' should contain more than one distribution.")
   }
   if(class(target_dist) != "list"){
     target_dist <- list(target_dist)
@@ -98,16 +90,18 @@ pAMCE <- function(formula,
     stop("target_dist should be 'list'.")
   }
 
-  ## Check each distribution
+  # ########################################
+  # Check each target profile distribution #
+  # ########################################
   for(i in 1:length(target_dist)){
     target_dist[[i]] <- checkDist(target_dist[[i]], type = target_type[i], formula = formula, data = data)
   }
 
-  ## Create Marginals and 2d-Joints from target_dist
+  ## Create Marginals and 2d-Joints from "target_dist"
   marginal_dist <- list()
   for(i in 1:length(target_dist)){
     if(target_type[i]  == "marginal"){marginal_dist[[i]] <- target_dist[[i]]}
-    if(target_type[i]  == "joint"){marginal_dist[[i]] <- Joint2Marginal(target_dist[[i]])}
+    # if(target_type[i]  == "joint"){marginal_dist[[i]] <- Joint2Marginal(target_dist[[i]])}
     if(target_type[i]  == "target_data"){marginal_dist[[i]] <- createDist(formula = formula,
                                                                           target_data = target_dist[[i]],
                                                                           exp_data = data, type  = "marginal")}
@@ -118,7 +112,7 @@ pAMCE <- function(formula,
     joint_dist <- list()
     for(i in 1:length(target_dist)){
       if(target_type[i]  == "marginal"){joint_dist[[i]] <- Marginal2Joint(target_dist[[i]])}
-      if(target_type[i]  == "joint"){joint_dist[[i]] <- target_dist[[i]]}
+      # if(target_type[i]  == "joint"){joint_dist[[i]] <- target_dist[[i]]}
       if(target_type[i]  == "target_data"){joint_dist[[i]] <- createDist(formula = formula,
                                                                          target_data = target_dist[[i]],
                                                                          exp_data = data, type  = "joint")}
@@ -150,7 +144,9 @@ pAMCE <- function(formula,
     marginal_dist[[z]]$levels <- as.character(marginal_dist[[z]]$levels)
   }
 
-  ## Check Baselines
+  # #################
+  # Check Baselines #
+  # #################
   factor_l <- length(all.vars(formula)[-1])
   combMat <- combn(factor_l,2); intNames <- c()
   for(k in 1:ncol(combMat)){
@@ -179,9 +175,9 @@ pAMCE <- function(formula,
     stop(paste("\n", wa1, wa2, wa3, wa4, wa5, sep = "\n"))
   }
 
-  # ############
-  # Renaming
-  # ############
+  # #############################
+  # Renaming (for internal use)
+  # #############################
   {
     # Rename formula
     formula_orig <- formula
