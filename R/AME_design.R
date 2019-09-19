@@ -2,6 +2,10 @@
 #' @param formula Formula
 #' @export
 
+
+
+
+
 weightDesign <- function(factor_name, target_dist, randomize_dist, sample, sim_size = 1000){
 
   # we average over factor levels

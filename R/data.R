@@ -1,4 +1,4 @@
-#' Dataset from Ono
+#' Dataset from Ono and Burden (2018)
 #'
 #'
 #' @name OnoData

@@ -1,3 +1,4 @@
+# (Internal Functions) Help functions for AME_estimate_collapse_genlasso.R
 AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 data,
                                                 pair = FALSE, cross_int,
@@ -69,7 +70,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   # }
   data <- data[order(data$cluster), ]
 
-  cat("\nBootstrap:\n")
+  cat(paste("\nBootstrap (", boot, "):\n", sep = ""))
   fit.mat  <- c()
   coef.mat <- matrix(NA, nrow = boot, ncol = length(coefAME_base_l))
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
@@ -171,45 +172,6 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
     fit.mat <- cbind(fit.mat, fit_boot[[b]]$tableAME_full[,4])
   }
   fit <- fit_boot[[1]]$tableAME_full
-
-  # for(b in 1:boot){
-  #
-  #   # seed.b <- seed + 1000*b
-  #   # set.seed(seed.b)
-  #   boot_id <- sample(unique(data$cluster), size = length(unique(data$cluster)), replace=TRUE)
-  #   # create bootstap sample with sapply
-  #   boot_which <- sapply(boot_id, function(x) which(data$cluster == x))
-  #   if(all_eq == TRUE){new_boot_id <- rep(seq(1:length(boot_id)), each = table(data$cluster)[1])
-  #   }else{new_boot_id <- rep(seq(1:length(boot_id)), times = unlist(lapply(boot_which, length)))}
-  #   data_boot <- data[unlist(boot_which),]
-  #   data_boot$cluster <- new_boot_id
-  #   data_boot$pair_id <- paste0(data_boot$cluster, data_boot$pair_id)
-  #
-  #   fitC <- AME.collapse.gen.crossfit(formula = formula,
-  #                                    formula_full = formula_full,
-  #                                    data = data_boot,
-  #                                    pair = pair,
-  #                                    fac.level = fac.level, ord.fac = ord.fac,
-  #                                    lambda = lambda,
-  #                                    marginal_dist = marginal_dist,
-  #                                    marginal_type = marginal_type,
-  #                                    difference = difference,
-  #                                    tableAME_base = tableAME_base,
-  #                                    eps = eps,
-  #                                    beta_weight = beta_weight)
-  #
-  #   # Store coefficients
-  #   coef.mat[b, 1:coefAME_base_l] <- fitC$coef
-  #   fit <- fitC$tableAME_full
-  #
-  #   if(b == 1) fit_0 <- fit
-  #   if(all(fit[,3] == fit_0[,3]) == FALSE) warning("check here")
-  #   fit.mat <- cbind(fit.mat, fit[,4])
-  #
-  #   if(b < 10) cat(paste(b, "..", sep=""))
-  #   if(b%%10 == 0) cat(paste(b, "...", sep=""))
-  # }
-
   estimate <- apply(fit.mat, 1, mean)
   se <- apply(fit.mat, 1, sd)
   low.95ci <- apply(fit.mat, 1, function(x) quantile(x, 0.025))
@@ -362,11 +324,11 @@ AME.collapse.gen.crossfit <- function(formula,
   marginal_dist_u_base <- marginal_dist_u_list[[1]]
 
   ## Add STD
-  table_STD <- AME.fit.STD(formula = formula,
-                           data = data,
-                           pair = pair,
-                           marginal_dist = marginal_dist,
-                           marginal_dist_u_base = marginal_dist_u_base)
+  table_STD <- AME.fit.STD.sep(formula = formula,
+                               data = data,
+                               pair = pair,
+                               marginal_dist = marginal_dist,
+                               marginal_dist_u_base = marginal_dist_u_base)
 
   # Insert into the main table
   uniq_fac <- unique(tableAME_1$factor)
@@ -382,7 +344,7 @@ AME.collapse.gen.crossfit <- function(formula,
       if(difference == TRUE){
         tableAME_add <- data.frame(matrix(NA, ncol = 0, nrow = length(marginal_type)))
         dif_est  <- tableAME_1_main_m[2:(1+length(marginal_type)), "estimate"] - STD_base$estimate
-        tableAME_add$type <- paste(marginal_type,"-STD",sep="")
+        tableAME_add$type <- paste(marginal_type,"-sample AMCE",sep="")
         tableAME_add$factor <- rep(uniq_fac[i], length(marginal_type))
         tableAME_add$level <- rep(uniq_level[j], length(marginal_type))
         tableAME_add$estimate <- dif_est
@@ -634,36 +596,6 @@ col.genlasso <- function(formula,
 
   # Fit Main
   fit   <- genlasso(X = X, y = y, D = D_u)
-
-  # # Cross Validation
-  # # set.seed(seed)
-  # foldid <- sample(rep(seq(nfolds), length = length(y)))
-  # MSE <- matrix(0, nrow = nfolds, ncol = length(cv.lambda))
-  # for (i in seq(nfolds)) {
-  #   which = foldid == i
-  #
-  #   X.cv   <- X[!which, ]
-  #   y.cv   <- y[!which]
-  #   X.test <- X[which, ]
-  #   y.test <- y[which]
-  #
-  #   fit.cv   <- genlasso(X = X.cv, y = y.cv, D = D)
-  #   beta.cv  <- coef(fit.cv, lambda = cv.lambda)$beta
-  #   MSE[i, 1:length(cv.lambda)] <- apply(y.test - X.test%*% beta.cv, 2, function(x) mean(x^2))
-  # }
-  # cv.error <- apply(MSE, 2, mean)
-  # names(cv.error) <- cv.lambda
-  #
-  # # cv.min
-  # cv.min <- cv.lambda[which.min(cv.error)]
-  #
-  # #cv.sd1
-  # cv.sd.each <- apply(MSE, 2, sd)
-  # cv.sd1.value <- min(cv.error) + cv.sd.each[which.min(cv.error)]
-  # cv.sd1 <- max(cv.lambda[cv.error <= cv.sd1.value])
-  #
-  # if(cv.type == "cv.1Std") lambda_u <- cv.sd1
-  # if(cv.type == "cv.min")  lambda_u <- cv.min
 
   beta_fit <- coef(fit, lambda = lambda)$beta
 

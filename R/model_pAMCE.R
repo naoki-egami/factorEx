@@ -1,12 +1,13 @@
-#' Estimating the population AMCE using the model-based approach
+#' Estimating the population AMCE using a model-based approach
 #' @param formula Formula
 #' @param formula_three Formula for three-way interactions (optional)
 #' @param data Data
 #' @param reg  TRUE (regularization) or FALSE (no regularization). Default is TRUE
 #' @param ord_fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
 #' @param pair Whether we use a paired-choice conjoint design
+#' @param pair_id Unique identifiers for pairs in the paired-choice conjoint design  (optional)
+#' @param cluster_id Unique identifiers for computing cluster standard errors (optional)
 #' @param cross_int Include interactions across profiles. Default is FALSE
-#' @param cluster Unique identifiers for computing cluster standard errors
 #' @param target_dist Target profile distributions to be used. This argument should be `list`
 #' @param target_type Types of target profile distributions. `marginal` or `target_data`. See Examples for details
 #' @param difference Whether we compute the differences between the multiple pAMCEs. Default is FALSE.
@@ -19,29 +20,31 @@
 #' @importFrom igraph graph_from_adjacency_matrix
 #' @importFrom pbmcapply pbmclapply
 #' @importFrom pbapply pblapply
+#' @importFrom sandwich sandwich estfun
 #' @import parallel
+#' @import stringr
 #' @export
 
-pAMCE <- function(formula,
-                  formula_three = NULL,
-                  data,
-                  reg = TRUE,
-                  ord_fac,
-                  pair = FALSE, pair_id = NULL, cross_int = FALSE,
-                  cluster = NULL,
-                  target_dist,
-                  target_type,
-                  difference = FALSE,
-                  cv_type = "cv.1Std", nfolds = 5,
-                  boot = 100,
-                  seed = 1234, numCores = NULL){
+model_pAMCE <- function(formula,
+                        formula_three = NULL,
+                        data,
+                        reg = TRUE,
+                        ord_fac,
+                        pair = FALSE, pair_id = NULL, cross_int = FALSE,
+                        cluster_id = NULL,
+                        target_dist,
+                        target_type,
+                        difference = FALSE,
+                        cv_type = "cv.1Std", nfolds = 5,
+                        boot = 100,
+                        seed = 1234, numCores = NULL){
 
   ##################
   ## HouseKeeping ##
   ##################
 
   if(missing(pair_id) == TRUE) pair_id <- NULL
-  if(missing(cluster) == TRUE) cluster <- seq(1:nrow(data))
+  if(missing(cluster_id) == TRUE) cluster_id <- seq(1:nrow(data))
   if(missing(target_type) == TRUE){
     target_type <- rep("marginal", length(target_dist))
   }
@@ -55,7 +58,8 @@ pAMCE <- function(formula,
   }
 
   if(is.null(names(target_dist)) == TRUE){
-    target_name <- paste("dist_", seq(1:length(target_dist)), sep = "")
+    target_name <- paste("target_", seq(1:length(target_dist)), sep = "")
+    names(target_dist) <- target_name
   }else{
     target_name <- names(target_dist)
   }
@@ -89,6 +93,18 @@ pAMCE <- function(formula,
   if(is.list(target_dist)==FALSE){
     stop("target_dist should be 'list'.")
   }
+  if(boot < 500){
+    cat("Note: suggest 'boot' greater than 500 for final results\n")
+  }
+
+  target_dist_orig <- target_dist
+  # Add Marginal Distributions of Profiles used in Experiments
+  Sample_Mar <- createDist(formula = formula, target_data = data,
+                        exp_data = data, type  = "marginal")
+  target_dist  <- c(list(Sample_Mar), target_dist)
+  names(target_dist)[1] <- "sample"  # (marginal distributions used for randomization)
+  target_name <- c("sample", target_name)
+  target_type <- c("marginal", target_type)
 
   # ########################################
   # Check each target profile distribution #
@@ -242,29 +258,30 @@ pAMCE <- function(formula,
 
   }
 
+  # Estimating pAMCE
   if(reg == FALSE){
     out <-  AME_estimate(formula = formula,
                          data = data,
                          pair = pair, pair_id = pair_id, cross_int = cross_int,
-                         cluster = cluster,
+                         cluster = cluster_id,
                          marginal_dist = marginal_dist,
                          marginal_type = target_name,
                          joint_dist = joint_dist,
                          boot = boot,
                          difference = difference, formula_three_c = formula_three_c)
   }else if(reg == TRUE){
-    if(missing(ord.fac)) ord.fac <- rep(TRUE, (length(all.vars(formula)) - 1))
+    if(missing(ord_fac)) ord_fac <- rep(TRUE, (length(all.vars(formula)) - 1))
     out <- AME_estimate_collapse_genlasso(formula = formula,
                                           data = data,
-                                          ord.fac = ord.fac,
+                                          ord.fac = ord_fac,
                                           pair = pair, pair_id = pair_id, cross_int = cross_int,
-                                          cluster = cluster,
+                                          cluster = cluster_id,
                                           marginal_dist = marginal_dist,
                                           marginal_type = target_name,
                                           joint_dist = joint_dist,
                                           formula_three_c = formula_three_c,
                                           difference = difference,
-                                          cv.type = cv.type,
+                                          cv.type = cv_type,
                                           nfolds = nfolds,
                                           boot = boot,
                                           eps = 0.0001,
@@ -287,8 +304,6 @@ pAMCE <- function(formula,
     out$Ftest <- as.numeric(Ftest)
   }
 
-
-
   # ##############
   # Name back
   # ##############
@@ -297,6 +312,8 @@ pAMCE <- function(formula,
     out$input$data <- data_orig
     out$input$marginal_dist <- marginal_dist_orig
     out$baseline <- baseline_orig
+    out$input$reg <- reg
+    out$input$target_dist  <- target_dist_orig
 
     marginal_dist_u_list <- list()
     for(z in 1:length(marginal_dist_orig)){
@@ -309,13 +326,17 @@ pAMCE <- function(formula,
     out$input$marginal_dist_u_base <- marginal_dist_u_base
 
     # AME
-    for(i in 1:length(out$AME)){
-      match_level <- match(out$AME[[i]]$level, internal_level[[out$AME[[i]]$factor[1]]])
-      out$AME[[i]]$factor <- rename_fac[,"original"][match(out$AME[[i]]$factor[1], rename_fac[,"internal"])]
-      orignal_use <- original_level[[out$AME[[i]]$factor[1]]]
-      out$AME[[i]]$level <- orignal_use[match_level]
+    for(i in 1:length(out$AMCE)){
+      match_level <- match(out$AMCE[[i]]$level, internal_level[[out$AMCE[[i]]$factor[1]]])
+      out$AMCE[[i]]$factor <- rename_fac[,"original"][match(out$AMCE[[i]]$factor[1], rename_fac[,"internal"])]
+      orignal_use <- original_level[[out$AMCE[[i]]$factor[1]]]
+      out$AMCE[[i]]$level <- orignal_use[match_level]
     }
-    names(out$AME) <- rename_fac[,"original"][match(names(out$AME), rename_fac[,"internal"])]
+    names(out$AMCE) <- rename_fac[,"original"][match(names(out$AMCE), rename_fac[,"internal"])]
+
+    # order of coefficients
+    out$coef_order <- str_count(colnames(out$boot_coef), ":") + 1
+
     # coefficients
     for(i in 1:fac_size){
       colnames(out$boot_coef) <- gsub(rename_fac[(i+1), "internal"], rename_fac[(i+1), "original"], colnames(out$boot_coef))
@@ -326,5 +347,6 @@ pAMCE <- function(formula,
 
   }
 
+  class(out)  <- c(class(out), "pAMCE")
   return(out)
 }

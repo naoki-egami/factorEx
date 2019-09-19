@@ -2,21 +2,12 @@
 % Please edit documentation in R/AME_estimate.R
 \name{AME_estimate}
 \alias{AME_estimate}
-\title{Estimating PAMCE withithout regularization}
+\title{(Internal Function): Estimating PAMCE withithout regularization}
 \usage{
 AME_estimate(formula, data, pair = FALSE, pair_id = NULL,
   cross_int = TRUE, cluster, marginal_dist, marginal_type,
   joint_dist = NULL, boot, difference = FALSE, formula_three_c)
 }
-\arguments{
-\item{formula}{formula}
-
-\item{data}{data}
-
-\item{pair}{whether we use the paired-conjoint design}
-
-\item{pair_id}{id for paired-conjoint design. required when 'pair = TRUE'}
-}
 \description{
-Estimating PAMCE withithout regularization
+(Internal Function): Estimating PAMCE withithout regularization
 }

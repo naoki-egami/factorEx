@@ -2,12 +2,12 @@
 % Please edit documentation in R/AME_estimate_collapse_genlasso.R
 \name{AME_estimate_collapse_genlasso}
 \alias{AME_estimate_collapse_genlasso}
-\title{Estimating PAMCE withithout regularization}
+\title{(Internal Function) Estimating pAMCE with generalized lasso regularization}
 \usage{
 AME_estimate_collapse_genlasso(formula, data, ord.fac, pair = FALSE,
   pair_id = NULL, cross_int = TRUE, cluster = NULL, marginal_dist,
   marginal_type, joint_dist, formula_three_c, difference = FALSE,
-  cv.type = "cv.1Std", nfolds = 2, boot = 100, eps = 1e-04,
+  cv.type = "cv.1Std", nfolds = 5, boot = 100, eps = 1e-04,
   numCores, seed)
 }
 \arguments{
@@ -15,10 +15,36 @@ AME_estimate_collapse_genlasso(formula, data, ord.fac, pair = FALSE,
 
 \item{data}{data}
 
-\item{pair}{whether we use the paired-conjoint design}
+\item{ord.fac}{Whether we assume each factor is ordered. When not specified, we assume all of them are ordered}
 
-\item{pair_id}{id for paired-conjoint design. required when 'pair = TRUE'}
+\item{pair}{Whether we use the paired-conjoint design}
+
+\item{pair_id}{Unique id for paired-conjoint design. Required when 'pair = TRUE'}
+
+\item{cross_int}{Include interactions across profiles. Default is FALSE}
+
+\item{cluster}{Unique identifiers for computing cluster standard errors}
+
+\item{marginal_dist}{Target profile marginal distributions to be used. This argument should be `list`}
+
+\item{marginal_type}{Names of target profile marginal distributions.}
+
+\item{joint_dist}{Target profile 2-dimensional joint distributions to be used. This argument should be `list`}
+
+\item{formula_three_c}{Formula for three-way interactions (optional)}
+
+\item{difference}{Whether we compute the differences between the multiple pAMCEs. Default is FALSE.}
+
+\item{cv.type}{(optimal only when `reg = TRUE``)  `cv.1Std`` (stronger regularization; default) or `cv.min` (weaker regularization).}
+
+\item{nfolds}{Number of cross validation folds. Default is 5.}
+
+\item{boot}{The number of bootstrap samples.}
+
+\item{numCores}{Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.}
+
+\item{seed}{Seed for bootstrap.}
 }
 \description{
-Estimating PAMCE withithout regularization
+(Internal Function) Estimating pAMCE with generalized lasso regularization
 }
