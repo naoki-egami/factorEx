@@ -2,19 +2,17 @@
 % Please edit documentation in R/decompose_pAMCE.R
 \name{decompose_pAMCE}
 \alias{decompose_pAMCE}
-\title{Decompose the difference between pAMCEs}
+\title{Decompose the difference between the pAMCEs}
 \usage{
 decompose_pAMCE(out, effect_name, target_diff)
 }
 \arguments{
 \item{out}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
 
+\item{effect_name}{Effect for which the function decomposes the difference in the pAMCEs. The first element should be a factor name and the second element should be a level name.}
+
 \item{target_diff}{Two target profile distributions for which the function compares the pAMCEs}
-
-\item{factor_name}{A factor for which the function visualizes the pAMCEs}
-
-\item{level_name}{A level for which the function visualizes the pAMCEs}
 }
 \description{
-Decompose the difference between pAMCEs
+Decompose the difference between the pAMCEs
 }

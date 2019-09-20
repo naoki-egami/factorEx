@@ -1,8 +1,6 @@
-#' Decompose the difference between pAMCEs
-#' @param out An object of class "pAMCE", a result of a call to 'model_pAMCE'
-#' @param factor_name A factor for which the function visualizes the pAMCEs
-#' @param level_name A level for which the function visualizes the pAMCEs
-#' @param target_diff Two target profile distributions for which the function compares the pAMCEs
+#' Diagnose modeling assumptions for the model-based approach
+#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE'
+#' @param factor_name A factor for which the function diagnoses modeling assumptions
 #' @export
 
 diagnose_pAMCE <- function(x, factor_name){
@@ -40,14 +38,11 @@ diagnose_pAMCE <- function(x, factor_name){
 
 }
 
-
-#' Plotting the estimated population AMCEs
+#' Plotting diagnostic checks
 #' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'
-#' @param factor_name Factors for which the function visualizes the pAMCEs
+#' @param factor_name A factor for which the function diagnoses modeling assumptions
 #' @param legend_pos Position of the legend. Default is 'topright'
-#' @param reg  TRUE (regularization) or FALSE (no regularization). Default is TRUE
-#' @param ord_fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
-#' @param main Title of the plot
+#' @param target_dist_name Names of the target profile distributions to be used
 #' @param xlim Range for the x-axis
 #' @param mar Space on the left side of the plot. Default is 12.
 #' @export

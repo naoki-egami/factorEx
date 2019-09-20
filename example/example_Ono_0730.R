@@ -90,7 +90,7 @@ ameOut_reg <- model_pAMCE(formula = as.formula(formula_u),
                           cluster = dfOnoRep$id,
                           target_dist = target_dist,
                           target_type = c("marginal", "marginal" , "target_data"),
-                          boot = 100)
+                          boot = 10)
 
 ameOut_reg <- model_pAMCE(formula = as.formula(formula_u),
                           data = dfOnoRep,
@@ -99,11 +99,11 @@ ameOut_reg <- model_pAMCE(formula = as.formula(formula_u),
                           boot = 100)
 
 
-ameOut$AMCE
+ameOut_reg$AMCE
 
 # summary function
 summary(ameOut_reg)
-summary(ameOut_reg, factor_name = c("gender"), sample  =  TRUE)
+a <- summary(ameOut_reg, factor_name = c("gender"))
 
 # $gender
 # type factor level    estimate          se     low.95ci    high.95ci

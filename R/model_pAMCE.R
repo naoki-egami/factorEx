@@ -16,13 +16,22 @@
 #' @param boot The number of bootstrap samples.
 #' @param seed Seed for bootstrap.
 #' @param numCores Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.
+#' @import parallel
+#' @import stringr
+#' @import arm
+#' @import genlasso
 #' @importFrom prodlim row.match
-#' @importFrom igraph graph_from_adjacency_matrix
+#' @importFrom igraph graph_from_adjacency_matrix components
 #' @importFrom pbmcapply pbmclapply
 #' @importFrom pbapply pblapply
 #' @importFrom sandwich sandwich estfun
-#' @import parallel
-#' @import stringr
+#' @importFrom mvtnorm rmvnorm
+#' @importFrom grDevices dev.off palette
+#' @importFrom graphics Axis abline legend par plot segments
+#' @importFrom stats as.formula coef density lm model.frame model.matrix pf pnorm quantile sd terms
+#' @importFrom utils combn setTxtProgressBar txtProgressBar globalVariables
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach "%dopar%" "%do%" foreach
 #' @export
 
 model_pAMCE <- function(formula,

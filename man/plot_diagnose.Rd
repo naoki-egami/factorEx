@@ -2,7 +2,7 @@
 % Please edit documentation in R/diagnose_pAMCE.R
 \name{plot_diagnose}
 \alias{plot_diagnose}
-\title{Plotting the estimated population AMCEs}
+\title{Plotting diagnostic checks}
 \usage{
 plot_diagnose(x, factor_name, legend_pos = "topright", target_dist_name,
   xlim, mar)
@@ -10,20 +10,16 @@ plot_diagnose(x, factor_name, legend_pos = "topright", target_dist_name,
 \arguments{
 \item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'}
 
-\item{factor_name}{Factors for which the function visualizes the pAMCEs}
+\item{factor_name}{A factor for which the function diagnoses modeling assumptions}
 
 \item{legend_pos}{Position of the legend. Default is 'topright'}
+
+\item{target_dist_name}{Names of the target profile distributions to be used}
 
 \item{xlim}{Range for the x-axis}
 
 \item{mar}{Space on the left side of the plot. Default is 12.}
-
-\item{reg}{TRUE (regularization) or FALSE (no regularization). Default is TRUE}
-
-\item{ord_fac}{Whether we assume each factor is ordered. When not specified, we assume all of them are ordered}
-
-\item{main}{Title of the plot}
 }
 \description{
-Plotting the estimated population AMCEs
+Plotting diagnostic checks
 }

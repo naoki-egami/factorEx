@@ -1,5 +1,4 @@
-#' (Internal Function): Estimating PAMCE withithout regularization
-#' @importFrom mvtnorm rmvnorm
+## (Internal Function): Estimating PAMCE withithout regularization
 
 AME_estimate <- function(formula,
                          data,

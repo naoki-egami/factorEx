@@ -6,7 +6,7 @@
 \usage{
 \method{plot}{pAMCE}(x, factor_name, target_dist_name,
   legend_pos = "topright", main = "Estimated population AMCEs", xlim,
-  mar = 12, diagnose = FALSE)
+  mar = 12, diagnose = FALSE, ...)
 }
 \arguments{
 \item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'}
@@ -24,6 +24,8 @@
 \item{mar}{Space on the left side of the plot. Default is 12}
 
 \item{diagnose}{Whether we plot diagnostic checks recommended in de la Cuesta, Egami, and Imai (2019). Default is FALSE}
+
+\item{...}{Other graphical parameters}
 }
 \description{
 Plotting the estimated population AMCEs

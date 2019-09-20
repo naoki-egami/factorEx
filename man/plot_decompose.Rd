@@ -4,18 +4,16 @@
 \alias{plot_decompose}
 \title{Plot decomposition of the difference between pAMCEs}
 \usage{
-plot_decompose(x, effect_name, target_diff, mar = 8)
+plot_decompose(x, effect_name, target_diff, mar = 12)
 }
 \arguments{
 \item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
 
+\item{effect_name}{Effect for which the function decomposes the difference in the pAMCEs. The first element should be a factor name and the second element should be a level name.}
+
 \item{target_diff}{Two target profile distributions for which the function compares the pAMCEs}
 
 \item{mar}{Space on the left side of the plot. Default is 12.}
-
-\item{factor_name}{A factor for which the function visualizes the pAMCEs}
-
-\item{level_name}{A level for which the function visualizes the pAMCEs}
 }
 \description{
 Plot decomposition of the difference between pAMCEs

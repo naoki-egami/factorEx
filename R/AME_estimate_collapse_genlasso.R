@@ -1,22 +1,23 @@
-#' (Internal Function) Estimating pAMCE with generalized lasso regularization
-#' @param formula formula
-#' @param data data
-#' @param ord.fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
-#' @param pair Whether we use the paired-conjoint design
-#' @param pair_id Unique id for paired-conjoint design. Required when 'pair = TRUE'
-#' @param cross_int Include interactions across profiles. Default is FALSE
-#' @param cluster Unique identifiers for computing cluster standard errors
-#' @param marginal_dist Target profile marginal distributions to be used. This argument should be `list`
-#' @param marginal_type Names of target profile marginal distributions.
-#' @param joint_dist Target profile 2-dimensional joint distributions to be used. This argument should be `list`
-#' @param formula_three_c Formula for three-way interactions (optional)
-#' @param difference Whether we compute the differences between the multiple pAMCEs. Default is FALSE.
-#' @param cv.type (optimal only when `reg = TRUE``)  `cv.1Std`` (stronger regularization; default) or `cv.min` (weaker regularization).
-#' @param nfolds Number of cross validation folds. Default is 5.
-#' @param boot The number of bootstrap samples.
-#' @param seed Seed for bootstrap.
-#' @param numCores Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.
-#' @importFrom parallel detectCores makeCluster stopCluster mclapply
+## (Internal Function) Estimating pAMCE with generalized lasso regularization
+## @param formula formula
+## @param data data
+## @param ord.fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
+## @param pair Whether we use the paired-conjoint design
+## @param pair_id Unique id for paired-conjoint design. Required when 'pair = TRUE'
+## @param cross_int Include interactions across profiles. Default is FALSE
+## @param cluster Unique identifiers for computing cluster standard errors
+## @param marginal_dist Target profile marginal distributions to be used. This argument should be `list`
+## @param marginal_type Names of target profile marginal distributions.
+## @param joint_dist Target profile 2-dimensional joint distributions to be used. This argument should be `list`
+## @param formula_three_c Formula for three-way interactions (optional)
+## @param difference Whether we compute the differences between the multiple pAMCEs. Default is FALSE.
+## @param cv.type (optimal only when `reg = TRUE``)  `cv.1Std`` (stronger regularization; default) or `cv.min` (weaker regularization).
+## @param nfolds Number of cross validation folds. Default is 5.
+## @param boot The number of bootstrap samples.
+## @param seed Seed for bootstrap.
+## @param numCores Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.
+## @param eps (internal use) tolerance range for collapsing
+## @importFrom parallel detectCores makeCluster stopCluster mclapply
 
 AME_estimate_collapse_genlasso <- function(formula,
                                            data,
@@ -121,7 +122,7 @@ AME_estimate_collapse_genlasso <- function(formula,
   three_way <- is.null(formula_three_c) == FALSE
 
   # base (just keep track of names)
-  fitAME_base <- AME.fit(formula = formula,
+  fitAME_base <- AME.fit(formula_full = formula,
                          data = data, pair = pair, cross_int = cross_int,
                          marginal_dist = marginal_dist,
                          marginal_dist_u_list = marginal_dist_u_list,

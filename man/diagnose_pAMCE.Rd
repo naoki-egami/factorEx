@@ -2,19 +2,15 @@
 % Please edit documentation in R/diagnose_pAMCE.R
 \name{diagnose_pAMCE}
 \alias{diagnose_pAMCE}
-\title{Decompose the difference between pAMCEs}
+\title{Diagnose modeling assumptions for the model-based approach}
 \usage{
 diagnose_pAMCE(x, factor_name)
 }
 \arguments{
-\item{factor_name}{A factor for which the function visualizes the pAMCEs}
+\item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
 
-\item{out}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
-
-\item{level_name}{A level for which the function visualizes the pAMCEs}
-
-\item{target_diff}{Two target profile distributions for which the function compares the pAMCEs}
+\item{factor_name}{A factor for which the function diagnoses modeling assumptions}
 }
 \description{
-Decompose the difference between pAMCEs
+Diagnose modeling assumptions for the model-based approach
 }

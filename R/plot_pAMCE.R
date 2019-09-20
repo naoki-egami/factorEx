@@ -7,12 +7,13 @@
 #' @param xlim Range for the x-axis
 #' @param mar Space on the left side of the plot. Default is 12
 #' @param diagnose Whether we plot diagnostic checks recommended in de la Cuesta, Egami, and Imai (2019). Default is FALSE
+#' @param ... Other graphical parameters
 #' @export
 
 plot.pAMCE <- function(x, factor_name, target_dist_name,
                        legend_pos = "topright",
                        main = "Estimated population AMCEs",
-                       xlim, mar = 12, diagnose = FALSE){
+                       xlim, mar = 12, diagnose = FALSE, ...){
 
   if(missing(factor_name) == TRUE){
       factor_name  <- names(x$AMCE)[1:2]

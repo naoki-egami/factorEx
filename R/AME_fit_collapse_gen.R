@@ -1,4 +1,5 @@
 # (Internal Functions) Help functions for AME_estimate_collapse_genlasso.R
+globalVariables("i")
 AME.collapse.genlasso.crossfit.boot <- function(formula,
                                                 data,
                                                 pair = FALSE, cross_int,
@@ -105,7 +106,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
     }else {
 
       cl <- makeCluster(numCores)
-      registerDoSNOW(cl)
+      registerDoParallel(cl)
       pb <- txtProgressBar(max = boot, style = 3)
       progress <- function(n) setTxtProgressBar(pb, n)
       opts <- list(progress = progress)
@@ -118,7 +119,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                           .export = c("prepare_data"),
                           .packages = c("genlasso", "prodlim"),
                           .options.snow = opts) %dopar% {
-                            crossFitPar(i,
+                            crossFitPar(x = i,
                                         formula = formula,
                                         formula_full = formula_full,
                                         data = data,

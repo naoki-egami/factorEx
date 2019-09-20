@@ -1,27 +1,28 @@
 #' Summarizing the estimated population AMCEs
-#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'
+#' @param object An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'
 #' @param factor_name Factors for which the function visualizes the pAMCEs
 #' @param target_dist_name Names of the target profile distributions to be used
 #' @param sample Whether to print the sample AMCEs, which is estimated based on the profile distribution used for randomization
+#' @param ... Other parameters
 #' @export
 
-summary.pAMCE <- function(x, factor_name, target_dist_name, sample = FALSE){
+summary.pAMCE <- function(object, factor_name, target_dist_name, sample = FALSE, ...){
 
   # #################
   # Housekeeping
   # #################
   if(missing(factor_name)){
-    factor_name <- all.vars(x$input$formula)[-1]
+    factor_name <- all.vars(object$input$formula)[-1]
   }else{
-    if(all(is.element(factor_name, names(x$AMCE))) == FALSE){
+    if(all(is.element(factor_name, names(object$AMCE))) == FALSE){
       stop(" 'factor_name' can only take a subset of factors estimated ")
     }
   }
 
   if(missing(target_dist_name)){
-    target_dist_name <- names(x$input$target_dist)
+    target_dist_name <- names(object$input$target_dist)
   }else{
-    if(all(is.element(target_dist_name, unique(x$AMCE[[1]]$type))) == FALSE){
+    if(all(is.element(target_dist_name, unique(object$AMCE[[1]]$type))) == FALSE){
       stop(" 'target_dist_name' can only take a subset of target profile distributions used. ")
     }
   }
@@ -29,7 +30,7 @@ summary.pAMCE <- function(x, factor_name, target_dist_name, sample = FALSE){
     target_dist_name <- c(target_dist_name, "sample AMCE")
   }
 
-  AMCE_table <- do.call("rbind", x$AMCE)
+  AMCE_table <- do.call("rbind", object$AMCE)
 
   AMCE_table_u <- AMCE_table[AMCE_table$type %in% target_dist_name, ]
   AMCE_table_u <- AMCE_table_u[AMCE_table_u$factor %in% factor_name, ]
@@ -37,7 +38,7 @@ summary.pAMCE <- function(x, factor_name, target_dist_name, sample = FALSE){
   AMCE_print <- AMCE_table_u[, c(1, 2, 3, 4, 5, 8)]
   colnames(AMCE_print) <- c("target_dist", "factor", "level", "Estimate", "Std. Error", "p value")
 
-  # add  significance
+  # add significance
   sig <- rep("", length(AMCE_print[,6]))
   sig[AMCE_print[ , 6]  < 0.001] <- "***"
   sig[AMCE_print[ , 6]  >= 0.001 & AMCE_print[ , 6]  < 0.01] <- "**"
@@ -52,5 +53,8 @@ summary.pAMCE <- function(x, factor_name, target_dist_name, sample = FALSE){
   cat("----------------\n")
   print(AMCE_print, row.names = FALSE)
   cat("---\n")
-  cat("Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1")
+  cat("Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1")
+
+  rownames(AMCE_print) <- NULL
+  invisible(AMCE_print)
 }
