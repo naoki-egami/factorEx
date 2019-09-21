@@ -353,8 +353,9 @@ model_pAMCE <- function(formula,
         colnames(out$boot_coef) <- gsub(internal_level[[i]][j], original_level[[i]][j], colnames(out$boot_coef))
       }
     }
-
+    names(out$coef)  <- colnames(out$boot_coef)
   }
+  out$approach <- "model_based"
 
   class(out)  <- c(class(out), "pAMCE")
   return(out)

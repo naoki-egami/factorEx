@@ -107,9 +107,9 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
       cl <- makeCluster(numCores)
       registerDoParallel(cl)
-      pb <- txtProgressBar(max = boot, style = 3)
-      progress <- function(n) setTxtProgressBar(pb, n)
-      opts <- list(progress = progress)
+      # pb <- txtProgressBar(max = boot, style = 3)
+      # progress <- function(n) setTxtProgressBar(pb, n)
+      # opts <- list(progress = progress)
       #
       #     cl <- makeCluster(numCores)
       #     registerDoParallel(cl)
@@ -117,8 +117,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
 
       fit_boot <- foreach(i = 1:boot,
                           .export = c("prepare_data"),
-                          .packages = c("genlasso", "prodlim"),
-                          .options.snow = opts) %dopar% {
+                          .packages = c("genlasso", "prodlim")) %dopar% {
                             crossFitPar(x = i,
                                         formula = formula,
                                         formula_full = formula_full,
@@ -138,7 +137,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                                         all_eq = all_eq,
                                         seed = seed)
                           }
-      close(pb)
+      #close(pb)
       stopCluster(cl)
     }
   }else{
