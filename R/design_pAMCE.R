@@ -8,8 +8,8 @@
 #' @param cross_int Include interactions across profiles. Default is FALSE
 #' @param target_dist Target profile distributions to be used. See Examples for details.
 #' @param target_type Types of target profile distributions. `marginal`, 'partial_joint', or `target_data`. See Examples for details.
-#' @import estimatr
 #' @import arm
+#' @importFrom estimatr lm_robust
 #' @importFrom sandwich sandwich estfun
 #' @export
 
