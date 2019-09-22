@@ -3,4 +3,8 @@
 old
 example
 testing
-.travis.yml
+README.md
+README.Rmd
+\.git
+\.gitignore
+\.travis\.yml
