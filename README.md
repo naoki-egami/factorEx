@@ -1,4 +1,4 @@
-# factorEx: R package for Design and Analysis of Factorial Experiments
+# factorEx: Design and Analysis of Factorial Experiments
 
 Authors: 
 
@@ -8,4 +8,4 @@ Authors:
 
 For a detailed description of the method see: 
 
- - [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution](https://imai.fas.harvard.edu/research/files/conjoint.pdf)
+ - [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution](https://imai.fas.harvard.edu/research/files/conjoint.pdf)(Working Paper)
