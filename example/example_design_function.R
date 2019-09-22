@@ -18,11 +18,16 @@ names(marginal_dem_l) <- name_u
 
 library(estimatr)
 design_out <- design_pAMCE(formula = as.formula(formula_u),
-                           data = dfOnoRep, factor_name = "gender",
+                           data = dfOnoRep,
                            pair_id = dfOnoRep$pair_id,
                            cluster_id = dfOnoRep$id,
                            target_dist  = marginal_dem_l,
                            target_type = "marginal")
+
+summary(design_out)
+
+plot(design_out)
+
 design_out$AMCE$gender
 
 model_out <- model_pAMCE(formula = as.formula(formula_u),

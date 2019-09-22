@@ -1,4 +1,4 @@
-#' PopCon
+#' factorEx
 #'
 #' This package estimates the PAMCEs with and without regularization
 #'
@@ -6,5 +6,5 @@
 #'
 #' @author Naoki Egami \email{negami@princeton.edu}
 #'
-#' @name PopCon
+#' @name factorEx
 NULL
