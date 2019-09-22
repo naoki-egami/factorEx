@@ -1,10 +1,4 @@
-#' Estimating PAMCE withithout regularization
-#' @param formula formula
-#' @param data data
-#' @param pair whether we use the paired-conjoint design
-#' @param pair_id id for paired-conjoint design. required when 'pair = TRUE'
-#' @importFrom mvtnorm rmvnorm
-#' @export
+## (Internal Function): Estimating PAMCE withithout regularization
 
 AME_estimate <- function(formula,
                          data,
@@ -230,11 +224,11 @@ AME_estimate <- function(formula,
   # colnames(table_AME) <- c("type", "factor", "level", "estimate", "se")
 
   # Combine STD estimate
-  table_STD <- AME.fit.STD.se(formula = formula,
-                              data = data,
-                              pair = pair,
-                              marginal_dist = marginal_dist,
-                              marginal_dist_u_base = marginal_dist_u_base)
+  table_STD <- AME.fit.STD.se.sep(formula = formula,
+                                  data = data,
+                                  pair = pair,
+                                  marginal_dist = marginal_dist,
+                                  marginal_dist_u_base = marginal_dist_u_base)
 
   uniq_fac <- unique(table_AME$factor)
   table_AME_full <- c()
@@ -250,7 +244,7 @@ AME_estimate <- function(formula,
         table_AME_add <- data.frame(matrix(NA, ncol = 0, nrow = length(marginal_type)))
         dif_est  <- table_AME_main_m[2:(1+length(marginal_type)), "estimate"] - STD_base$estimate
         dif_se   <- sqrt((table_AME_main_m[2:(1+length(marginal_type)), "se"])^2 + STD_base$se^2)
-        table_AME_add$type <- paste(marginal_type,"-STD",sep="")
+        table_AME_add$type <- paste(marginal_type,"-sample AMCE",sep="")
         table_AME_add$factor <- rep(uniq_fac[i], length(marginal_type))
         table_AME_add$level <- rep(uniq_level[j], length(marginal_type))
         table_AME_add$estimate <- dif_est
@@ -282,7 +276,7 @@ AME_estimate <- function(formula,
                  "cluster" = cluster_original, "marginal_dist" = marginal_dist,
                  "marginal_type" = marginal_type, "difference" = difference)
 
-  output <- list("AME" = AME, "baseline" = baseline, "coef" = coefInt,
+  output <- list("AMCE" = AME, "baseline" = baseline, "coef" = coefInt,
                  "type_all" = type_all, "type_difference" = type_difference,
                  "boot_coef" = boot_coef,
                  "input" = input)

@@ -1,6 +1,10 @@
-#' Estimating the population AMCE using the design-based estimator
-#' @param formula Formula
-#' @export
+#' #' Estimating the population AMCE using the design-based estimator
+#' #' @param formula Formula
+#' #' @export
+#'
+#'
+#'
+
 
 weightDesign <- function(factor_name, target_dist, randomize_dist, sample, sim_size = 1000){
 

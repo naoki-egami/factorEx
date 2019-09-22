@@ -3,12 +3,12 @@
 \docType{data}
 \name{OnoData}
 \alias{OnoData}
-\title{Dataset from Ono}
+\title{Dataset from Ono and Burden (2018)}
 \format{A \code{tbl} format data.}
 \usage{
 OnoData
 }
 \description{
-Dataset from Ono
+Dataset from Ono and Burden (2018)
 }
 \keyword{dataset}

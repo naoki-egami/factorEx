@@ -1,4 +1,4 @@
-Package: PopCon
+Package: factorEx
 Type: Package
 Title: Design and Analysis for Population Average Marginal Component Effects
 Version: 1.0.0
@@ -14,10 +14,13 @@ Depends:
     genlasso
 Imports:
     prodlim,
-    Hmisc,
     sandwich,
     igraph,
     pbmcapply,
-    doSNOW
-URL: http://github.com/naoki-egami/PopCon
-BugReports: http://github.com/naoki-egami/PopCon/issues
+    pbapply,
+    mvtnorm,
+    stringr,
+    doParallel,
+    foreach,
+    estimatr
+    
