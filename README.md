@@ -3,7 +3,7 @@ factorEx: Design and Analysis for Factorial Experiments
 
 Description: 
 
-R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+).
+R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+) and Egami and Imai (2019, JASA).
 
 Authors:
 
