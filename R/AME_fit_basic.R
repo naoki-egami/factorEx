@@ -353,10 +353,7 @@ Fthree <- function(formula,
 }
 
 
-# #######################
-# Help functions
-# #######################
-# 1. Cluster standard errors
+# Cluster standard errors
 cluster_se_glm <- function(model, cluster){
 
   #  Drop unused cluster indicators, if cluster var is a factor

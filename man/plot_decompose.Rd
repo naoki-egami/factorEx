@@ -7,14 +7,14 @@
 plot_decompose(x, effect_name, target_diff, mar = 12)
 }
 \arguments{
-\item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
+\item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'.}
 
 \item{effect_name}{Effect for which the function decomposes the difference in the pAMCEs. The first element should be a factor name and the second element should be a level name.}
 
-\item{target_diff}{Two target profile distributions for which the function compares the pAMCEs}
+\item{target_diff}{Two target profile distributions for which the function compares the pAMCEs. If missing, the function comapres the first target profile distribution and the in-sample profile distribution.}
 
 \item{mar}{Space on the left side of the plot. Default is 12.}
 }
 \description{
-Plot decomposition of the difference between pAMCEs
+See examples in `model_pAMCE`.
 }

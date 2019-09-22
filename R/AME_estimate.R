@@ -1,4 +1,4 @@
-## (Internal Function): Estimating PAMCE withithout regularization
+## (Internal Function): Estimating pAMCE without regularization
 
 AME_estimate <- function(formula,
                          data,

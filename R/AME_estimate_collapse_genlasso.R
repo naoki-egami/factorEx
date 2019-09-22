@@ -17,7 +17,6 @@
 ## @param seed Seed for bootstrap.
 ## @param numCores Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.
 ## @param eps (internal use) tolerance range for collapsing
-## @importFrom parallel detectCores makeCluster stopCluster mclapply
 
 AME_estimate_collapse_genlasso <- function(formula,
                                            data,

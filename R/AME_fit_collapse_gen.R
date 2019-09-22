@@ -550,14 +550,6 @@ fit.after.collapse.gen <- function(formula_full,
   return(out)
 }
 
-
-
-
-
-
-
-
-
 # #####################################
 # GenLasso Helpers
 # #####################################

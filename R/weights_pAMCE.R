@@ -90,8 +90,6 @@ weights_pAMCE <- function(formula, factor_name, data, pair, pair_id, cross_int,
 
 }
 
-
-
 weights_pAMCE_partial <- function(formula, factor_name, data, pair, pair_id, cross_int =FALSE,
                                   randomize_dist, target_dist,
                                   partial_joint_name){

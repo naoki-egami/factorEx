@@ -1,8 +1,5 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-old
-example
-testing
 README.md
 README.Rmd
 \.git

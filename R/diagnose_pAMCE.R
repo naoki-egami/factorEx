@@ -1,6 +1,6 @@
 #' Diagnose modeling assumptions for the model-based approach
-#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE'
-#' @param factor_name A factor for which the function diagnoses modeling assumptions
+#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE'.
+#' @param factor_name A factor for which the function diagnoses modeling assumptions.
 #' @export
 
 diagnose_pAMCE <- function(x, factor_name){
@@ -39,11 +39,11 @@ diagnose_pAMCE <- function(x, factor_name){
 }
 
 #' Plotting diagnostic checks
-#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'
-#' @param factor_name A factor for which the function diagnoses modeling assumptions
-#' @param legend_pos Position of the legend. Default is 'topright'
-#' @param target_dist_name Names of the target profile distributions to be used
-#' @param xlim Range for the x-axis
+#' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE.'
+#' @param factor_name A factor for which the function diagnoses modeling assumptions.
+#' @param legend_pos Position of the legend. Default is 'topright'.
+#' @param target_dist_name Names of the target profile distributions to be used.
+#' @param xlim Range for the x-axis.
 #' @param mar Space on the left side of the plot. Default is 12.
 #' @export
 

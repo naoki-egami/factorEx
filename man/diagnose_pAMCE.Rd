@@ -7,9 +7,9 @@
 diagnose_pAMCE(x, factor_name)
 }
 \arguments{
-\item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
+\item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE'.}
 
-\item{factor_name}{A factor for which the function diagnoses modeling assumptions}
+\item{factor_name}{A factor for which the function diagnoses modeling assumptions.}
 }
 \description{
 Diagnose modeling assumptions for the model-based approach

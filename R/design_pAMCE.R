@@ -2,17 +2,36 @@
 #' @param formula Formula
 #' @param data Data
 #' @param factor_name Factors for which the function estimates the pAMCEs. If not specified, the function estimates for all factors.
-#' @param pair Whether we use a paired-choice conjoint design
-#' @param pair_id Unique identifiers for pairs in the paired-choice conjoint design  (optional)
-#' @param cluster_id Unique identifiers for computing cluster standard errors (optional)
-#' @param cross_int Include interactions across profiles. Default is FALSE
-#' @param target_dist Target profile distributions to be used. See Examples for details.
-#' @param target_type Types of target profile distributions. `marginal`, 'partial_joint', or `target_data`. See Examples for details.
-#' @param partial_joint_name Names of factors representing partial joint distributions. See Examples for details.
-
+#' @param pair Whether we use a paired-choice conjoint design.
+#' @param pair_id Unique identifiers for pairs in the paired-choice conjoint design  (optional).
+#' @param cluster_id Unique identifiers for computing cluster standard errors (optional).
+#' @param cross_int Include interactions across profiles. Default is FALSE.
+#' @param target_dist Target profile distributions to be used. See Examples in the GitHub page for details.
+#' @param target_type Types of target profile distributions. `marginal`, 'partial_joint', or `target_data`.
+#' @param partial_joint_name (when `target_type = "partial_joint"`) Names of factors representing partial joint distributions. See Examples in the GitHub page for details.
 #' @import arm
 #' @importFrom estimatr lm_robust
 #' @importFrom sandwich sandwich estfun
+#' @examples
+#' \dontrun{
+#'   data("OnoBurden")
+#'   OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
+#'   # randomization based on marginal population design
+#'   target_dist_marginal <- OnoBurden$target_dist_marginal
+#'
+#'   # design-based estimation
+#'   out_design_mar <-
+#'     design_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+#'                  factor_name = c("gender", "age", "experience"),
+#'                  data = OnoBurden_data_pr,
+#'                  pair_id = OnoBurden_data_pr$pair_id,
+#'                  cluster_id = OnoBurden_data_pr$id,
+#'                  target_dist  = target_dist_marginal, target_type = "marginal")
+#'  summary(out_design_mar)
+#' }
+#' @description \code{design_pAMCE} implements the design-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
+#' @references de la Cuesta, Egami, and Imai. (2019+). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. (Working Paper). Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf}.
+#' @references Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540. Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf}.
 #' @export
 
 design_pAMCE <- function(formula, factor_name,

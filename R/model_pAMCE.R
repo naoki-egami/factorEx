@@ -6,10 +6,10 @@
 #' @param ord_fac Whether we assume each factor is ordered. When not specified, we assume all of them are ordered
 #' @param pair Whether we use a paired-choice conjoint design
 #' @param pair_id Unique identifiers for pairs in the paired-choice conjoint design  (optional)
-#' @param cluster_id Unique identifiers for computing cluster standard errors (optional)
-#' @param cross_int Include interactions across profiles. Default is FALSE
+#' @param cluster_id Unique identifiers for computing cluster standard errors (optional).
+#' @param cross_int Include interactions across profiles. Default is FALSE.
 #' @param target_dist Target profile distributions to be used. This argument should be `list`
-#' @param target_type Types of target profile distributions. `marginal` or `target_data`. See Examples for details
+#' @param target_type Types of target profile distributions. `marginal` or `target_data`. See Examples for details.
 #' @param difference Whether we compute the differences between the multiple pAMCEs. Default is FALSE.
 #' @param cv_type (optimal only when `reg = TRUE``)  `cv.1Std`` (stronger regularization; default) or `cv.min` (weaker regularization).
 #' @param nfolds Number of cross validation folds. Default is 5.
@@ -32,7 +32,30 @@
 #' @importFrom utils combn setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach "%dopar%" "%do%" foreach
+#' @examples
+#' \dontrun{
+#'   data("OnoBurden")
+#'   OnoBurden_data <- OnoBurden$OnoBurden_data
+#'   OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
+#'   target_dist_marginal <- OnoBurden$target_dist_marginal
+#'
+#'   # model-based estimation
+#'   model_design <-
+#'     model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+#'                  data = OnoBurden_data_cong,
+#'                  pair_id = OnoBurden_data_cong$pair_id,
+#'                  cluster_id = OnoBurden_data_cong$id,
+#'                  target_dist  = target_dist_marginal, target_type = "marginal")
+#'  summary(out_model, factor_name = c("gender"))
+#'
+#'  # decompose the difference in the pAMCEs
+#'  decompose_pAMCE(out_model, effect_name = c("gender", "Female"))
+#' }
+#' @description \code{model_pAMCE} implements the model-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
+#' @references de la Cuesta, Egami, and Imai. (2019+). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. (Working Paper). Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf}.
+#' @references Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540. Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf}.
 #' @export
+
 
 model_pAMCE <- function(formula,
                         formula_three = NULL,

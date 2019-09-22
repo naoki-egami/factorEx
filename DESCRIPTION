@@ -1,15 +1,16 @@
 Package: factorEx
 Type: Package
-Title: Design and Analysis for Population Average Marginal Component Effects
+Title: Design and Analysis for Factorial Experiments
 Version: 1.0.0
 Author: Naoki Egami, Brandon de la Cuesta, Kosuke Imai
 Maintainer: Naoki Egami <naoki.egami5@gmail.com>
-Description: Provides design-based and model-based estimators for the population average marginal component effects in general factorial experiments, including conjoint analysis.The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai(2019).
+Description: Provides design-based and model-based estimators for the population average marginal component effects in general factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+), and Egami and Imai (2019, JASA).
 License: GPL-2
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
 Depends:
+    R (>= 3.5.0),
     arm,
     genlasso
 Imports:
@@ -23,4 +24,5 @@ Imports:
     doParallel,
     foreach,
     estimatr
-    
+URL: https://github.com/naoki-egami/factorEx
+BugReports: https://github.com/naoki-egami/factorEx/issues

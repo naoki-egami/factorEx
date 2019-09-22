@@ -128,8 +128,6 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
   }
 }
 
-
-
 plot_pAMCE_base <- function(x, factor_name, target_dist_name,target_dist_name_use,
                             legend_pos = "topright",
                             main = "Estimated population AMCEs",

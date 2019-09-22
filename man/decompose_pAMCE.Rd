@@ -7,12 +7,15 @@
 decompose_pAMCE(out, effect_name, target_diff)
 }
 \arguments{
-\item{out}{An object of class "pAMCE", a result of a call to 'model_pAMCE'}
+\item{out}{An object of class "pAMCE", a result of a call to 'model_pAMCE'.}
 
 \item{effect_name}{Effect for which the function decomposes the difference in the pAMCEs. The first element should be a factor name and the second element should be a level name.}
 
-\item{target_diff}{Two target profile distributions for which the function compares the pAMCEs}
+\item{target_diff}{Two target profile distributions for which the function compares the pAMCEs. If missing, the function comapres the first target profile distribution and the in-sample profile distribution.}
+}
+\value{
+\code{decompose_pAMCE} returns `data.frame` showing the decomposition of the difference between the pAMCEs.
 }
 \description{
-Decompose the difference between the pAMCEs
+See examples in `model_pAMCE`.
 }
