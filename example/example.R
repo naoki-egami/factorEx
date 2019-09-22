@@ -3,9 +3,13 @@ load("../data/ono_data_analysis.RData")
 
 load("../data/OnoBurden_data_pr.rdata")
 OnoBurden_data_pr <- Pop.all
+## OnoBurden_data_pr <- Pop.all[is.element(Pop.all$id, seq(1:500)),]
 
 # setup the main data
 OnoBurden_data <- dfOno
+use_id <- sample(dfOno$id, size = 500, replace = FALSE)
+# OnoBurden_data <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
+# OnoBurden_data <- dfOno[dfOno$id %in% use_id,]
 
 formula_u <-  Y ~ gender + age + family + race + experience + party + pos_security
 # formula_u <- as.formula(Y ~ gender + age + race + trait + party + family + fav_rating + experience + policy_expertise +

@@ -37,10 +37,10 @@ library(devtools)
 install_github("naoki-egami/factorEx", dependencies=TRUE)
 ```
 
-Example of Design-based Confirmatory Analysis
----------------------------------------------
+(1) Example of Design-based Confirmatory Analysis
+-------------------------------------------------
 
-We use the conjoint experiment data based the marginal population randomization design.
+Here, we use the conjoint experiment that randomized profiles according to the marginal population randomization design.
 
 ### Case 1. Target Profile Distributions as Combination of Marginal Distributions
 
@@ -50,7 +50,11 @@ When using marginal distributions, `target_dist` should be a list and each eleme
 ## Load the package and data
 library(factorEx)
 data("OnoBurden")
-OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
+
+OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr # randomization based on marginal population design
+
+# we focus on target profile distributions based on Democratic legislators. 
+# See de la Cuesta, Egami, and Imai (2019+) for details.
 target_dist_marginal <- OnoBurden$target_dist_marginal
 
 target_dist_marginal
@@ -88,18 +92,19 @@ target_dist_marginal
     ##     Cut military budget Maintain strong defense 
     ##              0.98557692              0.01442308
 
-We can estimate the pAMCE with `design_pAMCE` with `target_type = "marginal"`.
+We can estimate the pAMCE with `design_pAMCE` with `target_type = "marginal"`. Use `factor_name` to specify for which factors we estimate the pAMCE.
 
 ``` r
 out_design_mar <- 
-  design_pAMCE(formula = Y ~ gender + age + family + race + experience + pos_security,
+  design_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+               factor_name = c("gender", "age", "experience"),
                data = OnoBurden_data_pr,
                pair_id = OnoBurden_data_pr$pair_id,
                cluster_id = OnoBurden_data_pr$id,
                target_dist  = target_dist_marginal, target_type = "marginal")
 ```
 
-    ## Estimaing the pAMCEs for gender...age...family...race...experience...pos_security...
+    ## Estimaing the pAMCEs for gender...age...experience...
 
 ``` r
 summary(out_design_mar)
@@ -109,40 +114,24 @@ summary(out_design_mar)
     ## ----------------
     ## Population AMCEs:
     ## ----------------
-    ##  target_dist       factor                   level    Estimate  Std. Error
-    ##       target       gender                  Female  0.02477776 0.006076128
-    ##       target          age            44 years old  0.07306318 0.014829073
-    ##       target          age            52 years old -0.01754745 0.014031192
-    ##       target          age            60 years old  0.05025204 0.014063363
-    ##       target          age            68 years old  0.06144573 0.013900972
-    ##       target          age            76 years old -0.02126525 0.015390251
-    ##       target       family      Married (no child) -0.01260551 0.012630608
-    ##       target       family  Married (two children)  0.01366118 0.010457583
-    ##       target       family       Single (divorced)  0.03244985 0.017206778
-    ##       target         race                   Black -0.03719006 0.007298216
-    ##       target         race                Hispanic -0.02519223 0.008688875
-    ##       target   experience                12 years  0.05751447 0.007740096
-    ##       target   experience                 4 years  0.02368536 0.008638306
-    ##       target   experience                 8 years  0.05293234 0.009273195
-    ##       target pos_security Maintain strong defense  0.04101219 0.023043993
-    ##  p value    
-    ##    0.000 ***
-    ##    0.000 ***
-    ##    0.211    
-    ##    0.000 ***
-    ##    0.000 ***
-    ##    0.167    
-    ##    0.318    
-    ##    0.191    
-    ##    0.059   .
-    ##    0.000 ***
-    ##    0.004  **
-    ##    0.000 ***
-    ##    0.006  **
-    ##    0.000 ***
-    ##    0.075   .
+    ##  target_dist     factor        level     Estimate  Std. Error p value    
+    ##       target     gender       Female  0.027987587 0.005861738   0.000 ***
+    ##       target        age 44 years old  0.019219282 0.014421828   0.183    
+    ##       target        age 52 years old -0.008792916 0.013765415   0.523    
+    ##       target        age 60 years old -0.006826945 0.013875303   0.623    
+    ##       target        age 68 years old  0.011247969 0.013569292   0.407    
+    ##       target        age 76 years old -0.052741541 0.014775629   0.000 ***
+    ##       target experience     12 years  0.041672460 0.007627281   0.000 ***
+    ##       target experience      4 years  0.046173813 0.008868432   0.000 ***
+    ##       target experience      8 years  0.040752213 0.009313376   0.000 ***
     ## ---
     ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Use `plot` to visualize the estimated pAMCEs.
+
+``` r
+plot(out_design_mar, factor_name = c("gender", "experience"))
+```
 
 ### Case 2. Target Profile Distributions as Combination of Marginal and Partial Joint Distributions
 
@@ -226,7 +215,7 @@ We can estimate the pAMCE with `design_pAMCE` with `target_type = "partial_joint
 ``` r
 out_design_par <- 
       design_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
-                   factor_name = c("gender", "race"),
+                   factor_name = c("gender", "age", "race"),
                    data = OnoBurden_data_pr,
                    pair_id = OnoBurden_data_pr$pair_id,
                    cluster_id = OnoBurden_data_pr$id,
@@ -234,19 +223,110 @@ out_design_par <-
                    partial_joint_name = partial_joint_name)
 ```
 
-    ## Estimaing the pAMCEs for gender...race...
+    ## Estimaing the pAMCEs for gender...age...race...
 
 ``` r
-summary(out_design_par, factor_name = c("gender", "race"))
+summary(out_design_par)
 ```
 
     ## 
     ## ----------------
     ## Population AMCEs:
     ## ----------------
-    ##  target_dist factor    level    Estimate  Std. Error p value    
-    ##       target gender   Female  0.03123110 0.006559877   0.000 ***
-    ##       target   race    Black -0.03499248 0.008122832   0.000 ***
-    ##       target   race Hispanic -0.02745158 0.009568282   0.004  **
+    ##  target_dist factor        level     Estimate  Std. Error p value    
+    ##       target gender       Female  0.024756315 0.006362147   0.000 ***
+    ##       target    age 44 years old  0.024750351 0.015045579   0.100    
+    ##       target    age 52 years old -0.006198274 0.014335803   0.665    
+    ##       target    age 60 years old -0.001011886 0.014397430   0.944    
+    ##       target    age 68 years old  0.016337413 0.014132614   0.248    
+    ##       target    age 76 years old -0.046107728 0.015464360   0.003  **
+    ##       target   race        Black -0.025770076 0.008043842   0.001  **
+    ##       target   race     Hispanic -0.028217748 0.009332710   0.002  **
     ## ---
     ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+(2) Example of Model-based Exploratory Analysis
+-----------------------------------------------
+
+Here, we use the conjoint experiment that randomized profiles according to the uniform distribution and incorporate the target profile distribution in the analysis stage.
+
+``` r
+OnoBurden_data <- OnoBurden$OnoBurden_data # randomization based on uniform 
+
+# due to large sample size, focus on "congressional candidates" for this example
+OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
+
+out_model <- 
+      model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+                   data = OnoBurden_data_cong, 
+                  reg =  TRUE,
+                   pair_id = OnoBurden_data_cong$pair_id,
+                   cluster_id = OnoBurden_data_cong$id,
+                   target_dist  = target_dist_marginal, target_type = "marginal")
+```
+
+    ## Note: suggest 'boot' greater than 500 for final results
+    ## Cross-Validation: 20%..40%..60%..80%..100%..
+    ## Bootstrap (100):
+
+``` r
+summary(out_model, factor_name = c("gender"))
+```
+
+    ## 
+    ## ----------------
+    ## Population AMCEs:
+    ## ----------------
+    ##  target_dist factor  level   Estimate Std. Error p value 
+    ##     target_1 gender Female 0.02485328 0.01783633   0.163 
+    ## ---
+    ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+When `sample = TRUE`, the function also reports the AMCE based on the in-sample profile distributions (`sample AMCE`), which is the uniform AMCE in this example.
+
+``` r
+summary(out_model, factor_name = c("gender"), sample = TRUE)
+```
+
+    ## 
+    ## ----------------
+    ## Population AMCEs:
+    ## ----------------
+    ##  target_dist factor  level     Estimate  Std. Error p value 
+    ##  sample AMCE gender Female -0.002290771 0.008321458   0.783 
+    ##     target_1 gender Female  0.024853283 0.017836332   0.163 
+    ## ---
+    ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Use `plot` to visualize the estimated pAMCEs. When `diagnose = TRUE`, it provides two diagnostic checks; specification tests and the check of bootstrap distributions.
+
+``` r
+plot(out_model, factor_name = c("gender"), diagnose = TRUE)
+```
+
+In the model-based analysis, we can also decompose the difference between the pAMCE and the uniform AMCE. Use `effect_name` to specify which pAMCE we want to decompose. `effect_name` has two elements; the first is a factor name and the second is a level name of interest.
+
+``` r
+decompose_pAMCE(out_model, effect_name = c("gender", "Female"))
+```
+
+    ##                type       factor      estimate          se      low.95ci
+    ## 1 target_1 - sample          age -4.476601e-03 0.002526321 -9.542598e-03
+    ## 2 target_1 - sample       family -1.028249e-03 0.002956149 -6.693040e-03
+    ## 3 target_1 - sample         race  5.505289e-03 0.007778271 -9.474694e-03
+    ## 4 target_1 - sample   experience  6.965927e-05 0.000791340 -1.264228e-03
+    ## 5 target_1 - sample        party  1.061621e-02 0.007640463 -6.015014e-03
+    ## 6 target_1 - sample pos_security  1.685740e-02 0.008586040 -2.671033e-05
+    ##       high.95ci
+    ## 1 -0.0003348427
+    ## 2  0.0058319109
+    ## 3  0.0219185310
+    ## 4  0.0015099003
+    ## 5  0.0247779725
+    ## 6  0.0315124642
+
+Or use `plot_decompose` to visualize the decomposition.
+
+``` r
+plot_decompose(out_model, effect_name = c("gender", "Female"))
+```

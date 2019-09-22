@@ -39,8 +39,8 @@ library(devtools)
 install_github("naoki-egami/factorEx", dependencies=TRUE)
 ```  
 
-## Example of Design-based Confirmatory Analysis
-We use the conjoint experiment data based the marginal population randomization design. 
+## (1) Example of Design-based Confirmatory Analysis
+Here, we use the conjoint experiment that randomized profiles according to the marginal population randomization design. 
 
 ### Case 1. Target Profile Distributions as Combination of Marginal Distributions
 When using marginal distributions, `target_dist` should be a list and each element should have a factor name. Within each list, a `numeric` vector should have the same level names as those in `data`.
@@ -48,21 +48,31 @@ When using marginal distributions, `target_dist` should be a list and each eleme
 ## Load the package and data
 library(factorEx)
 data("OnoBurden")
-OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
+
+OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr # randomization based on marginal population design
+
+# we focus on target profile distributions based on Democratic legislators. 
+# See de la Cuesta, Egami, and Imai (2019+) for details.
 target_dist_marginal <- OnoBurden$target_dist_marginal
 
 target_dist_marginal
 ```
 
-We can estimate the pAMCE with `design_pAMCE` with `target_type = "marginal"`. 
+We can estimate the pAMCE with `design_pAMCE` with `target_type = "marginal"`. Use `factor_name` to specify for which factors we estimate the pAMCE. 
 ```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
 out_design_mar <- 
-  design_pAMCE(formula = Y ~ gender + age + family + race + experience + pos_security,
+  design_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+               factor_name = c("gender", "age", "experience"),
                data = OnoBurden_data_pr,
                pair_id = OnoBurden_data_pr$pair_id,
                cluster_id = OnoBurden_data_pr$id,
                target_dist  = target_dist_marginal, target_type = "marginal")
 summary(out_design_mar)
+```
+
+Use `plot` to visualize the estimated pAMCEs.
+```{r eval = FALSE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+plot(out_design_mar, factor_name = c("gender", "experience"))
 ```
 
 ### Case 2. Target Profile Distributions as Combination of Marginal and Partial Joint Distributions
@@ -80,11 +90,50 @@ We can estimate the pAMCE with `design_pAMCE` with `target_type = "partial_joint
 ```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
 out_design_par <- 
       design_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
-                   factor_name = c("gender", "race"),
+                   factor_name = c("gender", "age", "race"),
                    data = OnoBurden_data_pr,
                    pair_id = OnoBurden_data_pr$pair_id,
                    cluster_id = OnoBurden_data_pr$id,
                    target_dist  = target_dist_partial, target_type = "partial_joint",
                    partial_joint_name = partial_joint_name)
-summary(out_design_par, factor_name = c("gender", "race"))
+summary(out_design_par)
+```
+
+## (2) Example of Model-based Exploratory Analysis
+Here, we use the conjoint experiment that randomized profiles according to the uniform distribution and incorporate the target profile distribution in the analysis stage. 
+
+```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+OnoBurden_data <- OnoBurden$OnoBurden_data # randomization based on uniform 
+
+# due to large sample size, focus on "congressional candidates" for this example
+OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
+
+out_model <- 
+      model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
+                   data = OnoBurden_data_cong, 
+                  reg =  TRUE,
+                   pair_id = OnoBurden_data_cong$pair_id,
+                   cluster_id = OnoBurden_data_cong$id,
+                   target_dist  = target_dist_marginal, target_type = "marginal")
+summary(out_model, factor_name = c("gender"))
+```
+
+When `sample = TRUE`, the function also reports the AMCE based on the in-sample profile distributions (`sample AMCE`), which is the uniform AMCE in this example.
+```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+summary(out_model, factor_name = c("gender"), sample = TRUE)
+```
+
+Use `plot` to visualize the estimated pAMCEs. When `diagnose = TRUE`, it provides two diagnostic checks; specification tests and the check of bootstrap distributions. 
+```{r eval = FALSE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+plot(out_model, factor_name = c("gender"), diagnose = TRUE)
+```
+
+In the model-based analysis, we can also decompose the difference between the pAMCE and the uniform AMCE. Use `effect_name` to specify which pAMCE we want to decompose. `effect_name` has two elements; the first is a factor name and  the second is a level name of interest. 
+```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+decompose_pAMCE(out_model, effect_name = c("gender", "Female"))
+```
+
+Or use `plot_decompose` to visualize the decomposition. 
+```{r eval = FALSE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
+plot_decompose(out_model, effect_name = c("gender", "Female"))
 ```

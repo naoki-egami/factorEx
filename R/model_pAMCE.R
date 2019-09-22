@@ -62,6 +62,14 @@ model_pAMCE <- function(formula,
     warning(" 'target_type' should be 'marginal' or 'target_data' ")
   }
 
+  if(length(target_type) == 1){
+    if(target_type  == "marginal"){
+      if(length(target_dist) != 1){
+        target_dist <- list(target_dist)
+      }
+    }
+  }
+
   if(length(target_type) != length(target_dist)){
     stop(" length of 'target_type' should be the same as length of 'target_dist' ")
   }

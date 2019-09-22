@@ -72,7 +72,7 @@ plot_diagnose <- function(x, factor_name, legend_pos = "topright", target_dist_n
       keep <- which(attr(bd[[i]], "dist") %in% target_dist_name)
       at_dist <- attr(bd[[i]], "dist")[keep]
       at_level <- attr(bd[[i]], "level")[keep]
-      bd[[i]]  <- bd[[i]][keep, ]
+      bd[[i]]  <- bd[[i]][keep, , drop=FALSE]
       attr(bd[[i]], "dist")  <- at_dist
       attr(bd[[i]], "level")  <- at_level
       for(j in 1:nrow(bd[[i]])){

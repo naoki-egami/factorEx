@@ -16,7 +16,7 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
                        xlim, mar = 12, diagnose = FALSE, ...){
 
   if(missing(factor_name) == TRUE){
-      factor_name  <- names(x$AMCE)[1:2]
+    factor_name  <- names(x$AMCE)[1:2]
   }else{
     if(all(is.element(factor_name, names(x$AMCE))) == FALSE){
       stop(" 'factor_name' can only take a subset of factors estimated ")
@@ -115,9 +115,11 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
   Axis(side=2, at = seq(1:length(p_name_full)), labels=rev(p_name_f_full),
        las=1, font = 2, tick=F, cex.axis = cex)
   abline(v = 0, lty = 2)
-  if(is.character(legend_pos[1]) == TRUE)  legend(legend_pos, plot_name, col= col, pch = pch)
-  if(is.character(legend_pos[1]) == FALSE) legend(x=legend_pos[1], y=legend_pos[2],
-                                                  plot_name, col= col, pch = pch)
+  if(length(plot_name) > 1){
+    if(is.character(legend_pos[1]) == TRUE)  legend(legend_pos, plot_name, col= col, pch = pch)
+    if(is.character(legend_pos[1]) == FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                    plot_name, col= col, pch = pch)
+  }
 
   if(diagnose ==  TRUE){
     par(ask = TRUE)
