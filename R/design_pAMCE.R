@@ -59,6 +59,14 @@ design_pAMCE <- function(formula, factor_name,
   if(missing(factor_name)){ factor_name <-  all.vars(formula)[-1] }
   data$cluster_id <- cluster_id
 
+  if(target_type  == "marginal"){
+    if(all(is.element(factor_name, names(target_dist))) == TRUE){
+      target_dist <- target_dist[factor_name]
+    }else{
+      stop(" names(target_dist) should contain all factors in `formula` or `factor_name` ")
+    }
+  }
+
   AMCE_list  <- list()
   design_weight_list <- list()
 

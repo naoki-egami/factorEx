@@ -49,6 +49,7 @@ summary.pAMCE <- function(object, factor_name, target_dist_name, sample = FALSE,
   AMCE_print$Sig <- sig
   colnames(AMCE_print)[7] <- ""
 
+  cat("\n")
   cat("----------------\n")
   cat("Population AMCEs:\n")
   cat("----------------\n")
