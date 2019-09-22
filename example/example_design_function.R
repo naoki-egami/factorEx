@@ -16,15 +16,16 @@ for(i in  1:length(marginal_dem)){
 }
 names(marginal_dem_l) <- name_u
 
-library(estimatr)
+library(factorEx)
 design_out <- design_pAMCE(formula = as.formula(formula_u),
                            data = dfOnoRep,
                            pair_id = dfOnoRep$pair_id,
                            cluster_id = dfOnoRep$id,
                            target_dist  = marginal_dem_l,
                            target_type = "marginal")
+summary(design_out, factor_name = "pos_security")
 
-summary(design_out)
+plot(design_out, mar = 15, factor_name = c("family", "gender"))
 
 plot(design_out)
 
@@ -37,7 +38,7 @@ model_out <- model_pAMCE(formula = as.formula(formula_u),
                          target_dist = target_dist,
                          target_type = c("marginal", "marginal" , "target_data"),
                          boot = 100)
-model_out$AMCE$gender
+summary(model_out, factor_name =  "gender")
 
 
 

@@ -63,15 +63,35 @@ names(target_dist_m) <- c("Rep_Mar", "Dem_Mar")
 ## But for illustration, I show everything here
 
 
+formula_u_s <-  Y ~ gender + age + family + race + experience + party + pos_security
+target_dist_marginal <- OnoBurden$target_dist_marginal
+target_dist_short <- target_dist_marginal[all.vars(formula_u)[-1]]
+
+formula_u <- Y ~ age + family + race + experience + trait + party +
+  policy_expertise + pos_security + pos_immigrants + pos_abortion +
+  pos_deficit + fav_rating + gender
 
 # Without regularization
-ameOut <- model_pAMCE(formula = as.formula(formula_u),
-                      data = dfOnoRep, reg = FALSE,
-                      pair = TRUE, pair_id = dfOnoRep$pair_id,
-                      cluster = dfOnoRep$id,
-                      target_dist = target_dist,
-                      target_type = c("marginal", "marginal" , "target_data"),
+ameOut_s <- model_pAMCE(formula = as.formula(formula_u_s),
+                      data = OnoBurden_data, reg = TRUE,
+                      pair = TRUE, pair_id = OnoBurden_data$pair_id,
+                      cluster = OnoBurden_data$id,
+                      target_dist = list(target_dist_short),
+                      target_type = "marginal",
                       boot = 100)
+plot_decompose(ameOut_s,  effect_name = c("gender", "Female"))
+summary(ameOut_s, factor_name = "gender", sample  = TRUE)
+
+ameOut <- model_pAMCE(formula = as.formula(formula_u),
+                      data = OnoBurden_data, reg = FALSE,
+                      pair = TRUE, pair_id = OnoBurden_data$pair_id,
+                      cluster = OnoBurden_data$id,
+                      target_dist = list(target_dist_marginal),
+                      target_type = "marginal",
+                      boot = 100)
+
+plot_decompose(ameOut_s,  effect_name = c("gender", "Female"))
+plot_decompose(ameOut,  effect_name = c("gender", "Female"))
 
 ameOut2 <- model_pAMCE(formula = as.formula(formula_u),
                       formula_three = ~  gender*family*race + gender*experience*party,
@@ -83,8 +103,7 @@ ameOut2 <- model_pAMCE(formula = as.formula(formula_u),
                       boot = 100)
 
 # With regularization
-ameOut_reg <- model_pAMCE(formula = as.formula(formula_u),
-                            formula_three = ~  gender*family*race + family*experience*party,
+ameOut_reg <- model_pAMCE(formula = as.formula(formula_u_s),
                           data = dfOnoRep,
                           pair = TRUE, pair_id = dfOnoRep$pair_id,
                           cluster = dfOnoRep$id,

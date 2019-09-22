@@ -5,7 +5,8 @@
 \title{Estimating the population AMCE using a design-based approach}
 \usage{
 design_pAMCE(formula, factor_name, data, pair = FALSE, pair_id = NULL,
-  cross_int = FALSE, cluster_id = NULL, target_dist, target_type)
+  cross_int = FALSE, cluster_id = NULL, target_dist, target_type,
+  partial_joint_name)
 }
 \arguments{
 \item{formula}{Formula}
@@ -25,6 +26,8 @@ design_pAMCE(formula, factor_name, data, pair = FALSE, pair_id = NULL,
 \item{target_dist}{Target profile distributions to be used. See Examples for details.}
 
 \item{target_type}{Types of target profile distributions. `marginal`, 'partial_joint', or `target_data`. See Examples for details.}
+
+\item{partial_joint_name}{Names of factors representing partial joint distributions. See Examples for details.}
 }
 \description{
 Estimating the population AMCE using a design-based approach

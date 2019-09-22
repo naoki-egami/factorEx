@@ -8,6 +8,8 @@
 #' @param cross_int Include interactions across profiles. Default is FALSE
 #' @param target_dist Target profile distributions to be used. See Examples for details.
 #' @param target_type Types of target profile distributions. `marginal`, 'partial_joint', or `target_data`. See Examples for details.
+#' @param partial_joint_name Names of factors representing partial joint distributions. See Examples for details.
+
 #' @import arm
 #' @importFrom estimatr lm_robust
 #' @importFrom sandwich sandwich estfun
@@ -17,7 +19,8 @@ design_pAMCE <- function(formula, factor_name,
                          data, pair = FALSE, pair_id = NULL,
                          cross_int = FALSE,
                          cluster_id = NULL,
-                         target_dist, target_type){
+                         target_dist, target_type,
+                         partial_joint_name){
 
   ##################
   ## HouseKeeping ##
@@ -48,6 +51,9 @@ design_pAMCE <- function(formula, factor_name,
     cross_int <- FALSE
   }
   if(missing(cluster_id) == TRUE) cluster_id <- seq(1:nrow(data))
+
+  ## Store Baselines
+  baseline <- lapply(model.frame(formula, data = data)[,-1], FUN = function(x) levels(x)[1])
 
   ## Compute weights
   if(missing(factor_name)){ factor_name <-  all.vars(formula)[-1] }
@@ -129,8 +135,10 @@ design_pAMCE <- function(formula, factor_name,
   # AMCE_list  <- AMCE
 
   # input
-  input <- list("formula" =  formula, "data" =  data, "target_dist" =  target_dist)
-  out <- list("AMCE" = AMCE_list, "design_weight" = design_weight_list, "approach" = "design_based")
+  input <- list("formula" =  formula, "data" =  data,
+                "target_dist" =  target_dist, "target_dist_name" = "target")
+  out <- list("AMCE" = AMCE_list, "design_weight" = design_weight_list, "baseline" = baseline,
+              "approach" = "design_based")
   out$input <- input
 
   class(out)  <- c(class(out), "pAMCE")

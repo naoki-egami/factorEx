@@ -66,6 +66,12 @@ model_pAMCE <- function(formula,
     stop(" length of 'target_type' should be the same as length of 'target_dist' ")
   }
 
+  if(class(target_dist) != "list"){
+    target_dist <- list(target_dist)
+  }
+  if(is.list(target_dist)==FALSE){
+    stop("target_dist should be 'list'.")
+  }
   if(is.null(names(target_dist)) == TRUE){
     target_name <- paste("target_", seq(1:length(target_dist)), sep = "")
     names(target_dist) <- target_name
@@ -95,12 +101,6 @@ model_pAMCE <- function(formula,
 
   if(difference == TRUE & length(target_dist) < 2){
     stop("if 'difference = TRUE', 'target_dist' should contain more than one distribution.")
-  }
-  if(class(target_dist) != "list"){
-    target_dist <- list(target_dist)
-  }
-  if(is.list(target_dist)==FALSE){
-    stop("target_dist should be 'list'.")
   }
   if(boot < 500){
     cat("Note: suggest 'boot' greater than 500 for final results\n")
@@ -323,6 +323,7 @@ model_pAMCE <- function(formula,
     out$baseline <- baseline_orig
     out$input$reg <- reg
     out$input$target_dist  <- target_dist_orig
+    out$input$target_dist_name
 
     marginal_dist_u_list <- list()
     for(z in 1:length(marginal_dist_orig)){

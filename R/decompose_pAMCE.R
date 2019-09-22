@@ -136,7 +136,6 @@ plot_decompose <- function(x, effect_name, target_diff, mar = 12){
 
   xmin <- min(low); xmax <- max(high)
 
-  dev.off()
   par(mar = c(4, mar, 6, 4))
   plot(point, seq(1:nrow(dec_tab)), pch = 19, ylim = c(0.5, nrow(dec_tab)+0.5), yaxt = "n",
        xlim = c(xmin, xmax), ylab =  "", xlab = "Difference in Popuation AMCEs",

@@ -20,7 +20,8 @@ summary.pAMCE <- function(object, factor_name, target_dist_name, sample = FALSE,
   }
 
   if(missing(target_dist_name)){
-    target_dist_name <- names(object$input$target_dist)
+    if(object$approach  == "model_based")  target_dist_name <- names(object$input$target_dist)
+    if(object$approach  == "design_based") target_dist_name <- "target"
   }else{
     if(all(is.element(target_dist_name, unique(object$AMCE[[1]]$type))) == FALSE){
       stop(" 'target_dist_name' can only take a subset of target profile distributions used. ")

@@ -23,14 +23,24 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
     }
   }
 
+  if(x$approach  == "design_based"){
+    diagnose <- FALSE
+  }
+
   if(missing(target_dist_name) == FALSE){
     if(all(is.element(target_dist_name, unique(x$AMCE[[1]]$type))) == FALSE){
       stop(" 'target_dist_name' can only take a subset of target profile distributions used. ")
     }
     pl_l <- length(target_dist_name)
   }else{
-    target_dist_name <- setdiff(unique(x$AMCE[[1]]$type), "sample")
-    pl_l <- length(unique(x$AMCE[[1]]$type)) - 1
+    if(x$approach  == "model_based"){
+      target_dist_name <- setdiff(unique(x$AMCE[[1]]$type), "sample")
+      pl_l <- length(unique(x$AMCE[[1]]$type)) - 1
+    }
+    if(x$approach  == "design_based"){
+      target_dist_name <- "target"
+      pl_l <- 1
+    }
   }
 
   col <- palette()[1:pl_l]
@@ -41,7 +51,7 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
   }
 
   plot_name <- target_dist_name
-  type_difference <- setdiff(x$type_difference, "sample AMCE")
+  # type_difference <- setdiff(x$type_difference, "sample AMCE")
   # plot_name[plot_name == "Sample"] <- "sample AMCE"
 
   ## Correct all esimates ----------
@@ -51,7 +61,7 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
     p_AME  <- x$AMCE[[factor_name[g]]]
     p_AME <- p_AME[order(factor(p_AME$level, levels = unique(p_AME$level))),] # updated on 12/27 (Naoki)
 
-    p_AME   <- p_AME[(p_AME$type %in% type_difference) == FALSE, ]
+    # p_AME   <- p_AME[(p_AME$type %in% type_difference) == FALSE, ]
 
     if(missing(target_dist_name) == FALSE){
       p_AME  <- p_AME[(p_AME$type %in% target_dist_name) == TRUE, ]
@@ -209,7 +219,9 @@ plot_pAMCE_base <- function(x, factor_name, target_dist_name,target_dist_name_us
   Axis(side=2, at = seq(1:length(p_name_full)), labels=rev(p_name_f_full),
        las=1, font = 2, tick=F, cex.axis = cex)
   abline(v = 0, lty = 2)
-  if(is.character(legend_pos[1]) == TRUE) legend(legend_pos, plot_name, col= col, pch = pch)
-  if(is.character(legend_pos[1]) == FALSE) legend(x=legend_pos[1], y=legend_pos[2],
-                                                  plot_name, col= col, pch = pch)
+  if(length(plot_name) > 1){
+    if(is.character(legend_pos[1]) == TRUE) legend(legend_pos, plot_name, col= col, pch = pch)
+    if(is.character(legend_pos[1]) == FALSE) legend(x=legend_pos[1], y=legend_pos[2],
+                                                    plot_name, col= col, pch = pch)
+  }
 }

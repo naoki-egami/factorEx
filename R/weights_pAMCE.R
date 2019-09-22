@@ -52,7 +52,7 @@ weights_pAMCE <- function(formula, factor_name, data, pair, pair_id, cross_int,
     }
 
     factor_use <- all.vars(formula)[-1]
-    randomize_dist <- model.frame(formula, data = data)
+    randomize_dist <- model.frame(formula, data = data)[, -1]
 
     if(setequal(factor_use, colnames(target_dist)) == FALSE){
       stop(" colnames(target_dist) should be the same as names of factors in 'formula' ")
@@ -237,7 +237,7 @@ weights_pAMCE_partial <- function(formula, factor_name, data, pair, pair_id, cro
     data_x[data_x ==  0] <- NA
 
     data_p_r <- t(t(data_x)*unlist(randomize_prob))
-    random_prob_f <- apply(data_p_r, 1, function(x) prod(x,  na.rm = TRUE))
+    randomize_prob_f <- apply(data_p_r, 1, function(x) prod(x,  na.rm = TRUE))
 
   }
   if(cross_int == TRUE){
