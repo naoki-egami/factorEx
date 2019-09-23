@@ -1,17 +1,17 @@
 factorEx: Design and Analysis for Factorial Experiments
 =======================================================
 
-Description: 
+**Description:**
 
 R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+) and Egami and Imai (2019, JASA).
 
-Authors:
+**Authors:**
 
 -   [Naoki Egami](https://scholar.princeton.edu/negami/)
 -   [Brandon de la Cuesta](https://www.brandondelacuesta.com/)
 -   [Kosuke Imai](https://imai.fas.harvard.edu/)
 
-References:
+**References:**
 
 -   de la Cuesta, Egami, and Imai. (2019+). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf) (Working Paper)
 
@@ -39,12 +39,21 @@ library(devtools)
 install_github("naoki-egami/factorEx", dependencies=TRUE)
 ```
 
-(1) Example of Design-based Confirmatory Analysis
--------------------------------------------------
+Examples
+--------
+
+-   [Design-based Confirmatory Analysis](#design)
+-   [Case 1: Use Marginal Distributions for Target Profile Distribution](#designMar)
+-   [Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution](#designJoint)
+
+-   [Model-based Exploratory Analysis](#model)
+
+(1) Design-based Confirmatory Analysis
+--------------------------------------
 
 Here, we use the conjoint experiment that randomized profiles according to the marginal population randomization design.
 
-### Case 1. Target Profile Distributions as Combination of Marginal Distributions
+### Case 1: Use Marginal Distributions for Target Profile Distributions
 
 When using marginal distributions, `target_dist` should be a list and each element should have a factor name. Within each list, a `numeric` vector should have the same level names as those in `data`.
 
@@ -135,7 +144,7 @@ Use `plot` to visualize the estimated pAMCEs.
 plot(out_design_mar, factor_name = c("gender", "experience"))
 ```
 
-### Case 2. Target Profile Distributions as Combination of Marginal and Partial Joint Distributions
+### Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution
 
 The use of partial joint distributions is useful because it can relax the assumption of no three-way or higher-order interactions (see de la Cuesta, Egami, and Imai (2019+)).
 
@@ -247,8 +256,8 @@ summary(out_design_par)
     ## ---
     ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-(2) Example of Model-based Exploratory Analysis
------------------------------------------------
+(2) Model-based Exploratory Analysis
+------------------------------------
 
 Here, we use the conjoint experiment that randomized profiles according to the uniform distribution and incorporate the target profile distribution in the analysis stage.
 

@@ -5,3 +5,4 @@ README.Rmd
 \.git
 \.gitignore
 \.travis\.yml
+README_cache
