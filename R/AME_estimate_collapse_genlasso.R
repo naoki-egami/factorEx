@@ -173,6 +173,8 @@ AME_estimate_collapse_genlasso <- function(formula,
   type_all   <- unique(table_AME$type)
   type_difference   <- setdiff(unique(table_AME$type), marginal_type)
 
+  coef_final <- apply(boot_coef, 2, mean)
+
   input  <- list("formula" = formula, "data" = data,
                  "pair" = pair, "pair_id" = pair_id, "cross_int" = cross_int,
                  "marginal_dist" = marginal_dist,
@@ -180,7 +182,7 @@ AME_estimate_collapse_genlasso <- function(formula,
                  "marginal_dist_u_base" = marginal_dist_u_base,
                  "marginal_type" = marginal_type, "difference" = difference)
 
-  output <- list("AMCE" = AME, "baseline" = baseline,
+  output <- list("AMCE" = AME, "baseline" = baseline, "coef" =  coef_final,
                  "type_all" = type_all, "type_difference" = type_difference,
                  "boot_AMCE" = boot_AME, "boot_coef" = boot_coef,
                  "input" = input)

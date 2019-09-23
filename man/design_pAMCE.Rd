@@ -29,13 +29,24 @@ design_pAMCE(formula, factor_name, data, pair = FALSE, pair_id = NULL,
 
 \item{partial_joint_name}{(when `target_type = "partial_joint"`) Names of factors representing partial joint distributions. See Examples in the GitHub page for details.}
 }
+\value{
+\code{design_pAMCE} returns an object of \code{pAMCE} class.
+ \itemize{
+   \item \code{AMCE}: Estimates of the pAMCE for all factors.
+   \item \code{design_weight}: Weight for each observation used in the weighted difference-in-means.
+   \item \code{approach}: "design_based"
+   \item \code{input}: Input into the function.
+   \item \code{...}: Values for internal use.
+ }
+}
 \description{
 \code{design_pAMCE} implements the design-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
 }
 \examples{
 \dontrun{
   data("OnoBurden")
-  OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr # randomization based on marginal population design
+  OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
+  # randomization based on marginal population design
   target_dist_marginal <- OnoBurden$target_dist_marginal
 
   # design-based estimation

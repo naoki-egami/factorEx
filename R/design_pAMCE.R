@@ -12,6 +12,14 @@
 #' @import arm
 #' @importFrom estimatr lm_robust
 #' @importFrom sandwich sandwich estfun
+#' @return \code{design_pAMCE} returns an object of \code{pAMCE} class.
+#'  \itemize{
+#'    \item \code{AMCE}: Estimates of the pAMCE for all factors.
+#'    \item \code{design_weight}: Weight for each observation used in the weighted difference-in-means.
+#'    \item \code{approach}: "design_based"
+#'    \item \code{input}: Input into the function.
+#'    \item \code{...}: Values for internal use.
+#'  }
 #' @examples
 #' \dontrun{
 #'   data("OnoBurden")

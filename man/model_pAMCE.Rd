@@ -45,6 +45,17 @@ model_pAMCE(formula, formula_three = NULL, data, reg = TRUE, ord_fac,
 
 \item{numCores}{Number of cores to be used for parallel computing. If not specified, detect the number of available cores internally.}
 }
+\value{
+\code{model_pAMCE} returns an object of \code{pAMCE} class.
+ \itemize{
+   \item \code{AMCE}: Estimates of the pAMCE for all factors.
+   \item \code{boot_AMCE}: Estimates of the pAMCE for all factors in each bootstrap sample.
+   \item \code{boot_coef}: Estimates of coefficients for the linear probability model in each bootstrap sample.
+   \item \code{approach}: "model_based"
+   \item \code{input}: Input into the function.
+   \item \code{...}: Values for internal use.
+ }
+}
 \description{
 \code{model_pAMCE} implements the model-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
 }
@@ -56,7 +67,7 @@ model_pAMCE(formula, formula_three = NULL, data, reg = TRUE, ord_fac,
   target_dist_marginal <- OnoBurden$target_dist_marginal
 
   # model-based estimation
-  model_design <-
+  out_model <-
     model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
                  data = OnoBurden_data_cong,
                  pair_id = OnoBurden_data_cong$pair_id,

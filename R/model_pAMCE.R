@@ -32,6 +32,15 @@
 #' @importFrom utils combn setTxtProgressBar txtProgressBar globalVariables
 #' @importFrom doParallel registerDoParallel
 #' @importFrom foreach "%dopar%" "%do%" foreach
+#' @return \code{model_pAMCE} returns an object of \code{pAMCE} class.
+#'  \itemize{
+#'    \item \code{AMCE}: Estimates of the pAMCE for all factors.
+#'    \item \code{boot_AMCE}: Estimates of the pAMCE for all factors in each bootstrap sample.
+#'    \item \code{boot_coef}: Estimates of coefficients for the linear probability model in each bootstrap sample.
+#'    \item \code{approach}: "model_based"
+#'    \item \code{input}: Input into the function.
+#'    \item \code{...}: Values for internal use.
+#'  }
 #' @examples
 #' \dontrun{
 #'   data("OnoBurden")
@@ -40,7 +49,7 @@
 #'   target_dist_marginal <- OnoBurden$target_dist_marginal
 #'
 #'   # model-based estimation
-#'   model_design <-
+#'   out_model <-
 #'     model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
 #'                  data = OnoBurden_data_cong,
 #'                  pair_id = OnoBurden_data_cong$pair_id,
@@ -331,7 +340,7 @@ model_pAMCE <- function(formula,
 
   ## Approximate F-test
   if(is.null(formula_three_c) == FALSE){
-    if(reg == TRUE) coef_f <- apply(out$boot_coef, 2, mean)
+    if(reg == TRUE)  coef_f <- apply(out$boot_coef, 2, mean)
     if(reg == FALSE) coef_f <- out$coef
     data_u <- out$input$data
 
