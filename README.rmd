@@ -42,16 +42,16 @@ install_github("naoki-egami/factorEx", dependencies=TRUE)
 
 ## Examples
 
-- [Design-based Confirmatory Analysis](#design)
-  - [Case 1: Use Marginal Distributions for Target Profile Distribution](#designMar)
-  - [Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution](#designJoint)
+- (1) Design-based Confirmatory Analysis
+    - Case 1: Use Marginal Distributions for Target Profile Distribution
+    - Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution
 
-- [Model-based Exploratory Analysis](#model)
+- (2) Model-based Exploratory Analysis
 
-## (1) Design-based Confirmatory Analysis {#design}
+## (1) Design-based Confirmatory Analysis 
 Here, we use the conjoint experiment that randomized profiles according to the marginal population randomization design. 
 
-### Case 1: Use Marginal Distributions for Target Profile Distributions {#designMar}
+### Case 1: Use Marginal Distributions for Target Profile Distributions 
 When using marginal distributions, `target_dist` should be a list and each element should have a factor name. Within each list, a `numeric` vector should have the same level names as those in `data`.
 ```{r eval = TRUE, echo = TRUE, tidy=FALSE, warning=FALSE, error=FALSE, message=FALSE}
 ## Load the package and data
@@ -84,7 +84,7 @@ Use `plot` to visualize the estimated pAMCEs.
 plot(out_design_mar, factor_name = c("gender", "experience"))
 ```
 
-### Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution {#designJoint}
+### Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution 
 The use of partial joint distributions is useful because it can relax the assumption of no three-way or higher-order interactions (see de la Cuesta, Egami, and Imai (2019+)).
 
 When using a combination of marginal and partial joint distributions, `target_dist` should be a list and each element should be a `numeric` vector (if marginal) or an `array`/`table` (if partial joint). Then, use argument `partial_joint_name` to specify which factors are marginal and partial joints. In the following example, `c("gender", "age", "family")` has the partial joint distributions over the three factors. `race` and `party` are based on the marginal distributions, respectively. `c("experience", "pos_security")` has the partial joint distributions over the two factors. Within each list, a `numeric` vector or an `array`/`table` should have the same level names as those in `data`.
