@@ -42,11 +42,10 @@ install_github("naoki-egami/factorEx", dependencies=TRUE)
 Examples
 --------
 
--   1.  Design-based Confirmatory Analysis
-
+-   **Design-based Confirmatory Analysis**
     -   Case 1: Use Marginal Distributions for Target Profile Distribution
     -   Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution
--   1.  Model-based Exploratory Analysis
+-   **Model-based Exploratory Analysis**
 
 (1) Design-based Confirmatory Analysis
 --------------------------------------
