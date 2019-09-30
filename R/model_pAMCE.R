@@ -42,7 +42,22 @@
 #'    \item \code{...}: Values for internal use.
 #'  }
 #' @examples
+#'   # Small example
+#'   target_dist_marginal <- OnoBurden$target_dist_marginal
+#'   OnoBurden_data <- OnoBurden$OnoBurden_data
+#'   OnoBurden_data_small <- OnoBurden_data[1:300, ]
+#'   target_dist_marginal_small <- target_dist_marginal[c("gender", "race")]
+#'   out_model_s <-
+#'       model_pAMCE(formula = Y ~ gender + race,
+#'            data = OnoBurden_data_small,
+#'            pair_id = OnoBurden_data_small$pair_id,
+#'            cluster_id = OnoBurden_data_small$id,
+#'            target_dist  = target_dist_marginal_small,
+#'            target_type = "marginal", numCores = 2)
+#'   summary(out_model_s, factor_name = c("gender"))
+#'
 #' \dontrun{
+#'   # Example
 #'   data("OnoBurden")
 #'   OnoBurden_data <- OnoBurden$OnoBurden_data
 #'   OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
@@ -143,7 +158,7 @@ model_pAMCE <- function(formula,
     stop("if 'difference = TRUE', 'target_dist' should contain more than one distribution.")
   }
   if(boot < 500){
-    cat("Note: suggest 'boot' greater than 500 for final results\n")
+    message("Note: suggest 'boot' greater than 500 for final results.")
   }
 
   target_dist_orig <- target_dist

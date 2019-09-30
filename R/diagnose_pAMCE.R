@@ -49,6 +49,10 @@ diagnose_pAMCE <- function(x, factor_name){
 
 plot_diagnose <- function(x, factor_name, legend_pos = "topright", target_dist_name, xlim, mar){
 
+  # reset parameters on exit
+  opar <- par(no.readonly =TRUE)
+  on.exit(par(opar))
+
   if(all(is.element(factor_name, names(x$AMCE))) == FALSE){
     stop(" 'factor_name' can only take a subset of factors estimated ")
   }
@@ -84,7 +88,7 @@ plot_diagnose <- function(x, factor_name, legend_pos = "topright", target_dist_n
              xlab = "", lwd = 2)
 
         if(count == 1 & boot < 500){
-          cat("Note: suggest 'boot' greater than 500 for final results\n")
+          message("Note: suggest 'boot' greater than 500 for final results.")
         }
       }
     }

@@ -15,6 +15,10 @@ plot.pAMCE <- function(x, factor_name, target_dist_name,
                        main = "Estimated population AMCEs",
                        xlim, mar = 12, diagnose = FALSE, ...){
 
+  # reset parameters on exit
+  opar <- par(no.readonly =TRUE)
+  on.exit(par(opar))
+
   if(missing(factor_name) == TRUE){
     factor_name  <- names(x$AMCE)[1:2]
   }else{

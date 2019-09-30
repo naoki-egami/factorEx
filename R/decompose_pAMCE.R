@@ -116,6 +116,10 @@ decompose_pAMCE <- function(out, effect_name, target_diff){
 
 plot_decompose <- function(x, effect_name, target_diff, mar = 12){
 
+  # reset parameters on exit
+  opar <- par(no.readonly =TRUE)
+  on.exit(par(opar))
+
   factor_name <- effect_name[1]
   level_name  <- effect_name[2]
 

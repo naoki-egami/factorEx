@@ -47,7 +47,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
                             fac.level = fac.level, ord.fac = ord.fac)
 
 
-  cat("Cross-Validation: ")
+  message("Cross-Validation: ", appendLF = FALSE)
   set.seed(seed)
   cv.lambda <- col.base.genlasso(formula = formula,
                                  data = data, pair = pair,
@@ -71,7 +71,7 @@ AME.collapse.genlasso.crossfit.boot <- function(formula,
   # }
   data <- data[order(data$cluster), ]
 
-  cat(paste("\nBootstrap (", boot, "):\n", sep = ""))
+  message(paste("\nBootstrap (", boot, "):\n", sep = ""))
   fit.mat  <- c()
   coef.mat <- matrix(NA, nrow = boot, ncol = length(coefAME_base_l))
   all_eq <- all(table(data$cluster) == table(data$cluster)[1])
@@ -670,7 +670,7 @@ cv.genlasso <- function(formula,
                                beta_weight = beta_weight,
                                seed = (seed + i))
     lambda_c[i] <- cv.fit
-    cat(paste(round(i*(100/5)),"%..",sep=""))
+    message(paste(round(i*(100/5)),"%..",sep=""), appendLF = FALSE)
   }
   lambda <- mean(lambda_c)
 

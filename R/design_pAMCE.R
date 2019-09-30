@@ -21,7 +21,23 @@
 #'    \item \code{...}: Values for internal use.
 #'  }
 #' @examples
+#' # Small example
+#' data("OnoBurden")
+#' OnoBurden_data_pr_s <- OnoBurden$OnoBurden_data_pr[1:500, ]
+#' # randomization based on marginal population design
+#' target_dist_marginal_s <- OnoBurden$target_dist_marginal[c("gender", "age")]
+#'
+#' # design-based estimation
+#' out_design_mar_s <-
+#'   design_pAMCE(formula = Y ~ gender + age,
+#'                factor_name = "gender",
+#'                data = OnoBurden_data_pr_s,
+#'                pair_id = OnoBurden_data_pr_s$pair_id,
+#'                cluster_id = OnoBurden_data_pr_s$id,
+#'                target_dist  = target_dist_marginal_s, target_type = "marginal")
+#' summary(out_design_mar_s)
 #' \dontrun{
+#'   #  Example
 #'   data("OnoBurden")
 #'   OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
 #'   # randomization based on marginal population design
@@ -89,7 +105,7 @@ design_pAMCE <- function(formula, factor_name,
   AMCE_list  <- list()
   design_weight_list <- list()
 
-  cat("Estimaing the pAMCEs for ")
+  message("Estimaing the pAMCEs for ", appendLF = FALSE)
   for(z in 1:length(factor_name)){
     factor_name_z <- factor_name[z]
     out_w <- weights_pAMCE(formula =  formula, factor_name = factor_name_z,
@@ -98,7 +114,7 @@ design_pAMCE <- function(formula, factor_name,
                            partial_joint_name = partial_joint_name)
 
     formula_w <- as.formula(paste(as.character(formula)[2], "~", factor_name_z, sep =  ""))
-    cat(paste(factor_name_z,  "...", sep = ""))
+    message(paste(factor_name_z,  "...", sep = ""), appendLF = FALSE)
     design_weight <- out_w$design_weight
     suppressWarnings(lm_w <- lm_robust(formula_w,
                                        data  =  out_w$newdata,

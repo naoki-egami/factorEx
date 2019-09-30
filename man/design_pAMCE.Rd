@@ -43,7 +43,23 @@ design_pAMCE(formula, factor_name, data, pair = FALSE, pair_id = NULL,
 \code{design_pAMCE} implements the design-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
 }
 \examples{
+# Small example
+data("OnoBurden")
+OnoBurden_data_pr_s <- OnoBurden$OnoBurden_data_pr[1:500, ]
+# randomization based on marginal population design
+target_dist_marginal_s <- OnoBurden$target_dist_marginal[c("gender", "age")]
+
+# design-based estimation
+out_design_mar_s <-
+  design_pAMCE(formula = Y ~ gender + age,
+               factor_name = "gender",
+               data = OnoBurden_data_pr_s,
+               pair_id = OnoBurden_data_pr_s$pair_id,
+               cluster_id = OnoBurden_data_pr_s$id,
+               target_dist  = target_dist_marginal_s, target_type = "marginal")
+summary(out_design_mar_s)
 \dontrun{
+  #  Example
   data("OnoBurden")
   OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
   # randomization based on marginal population design

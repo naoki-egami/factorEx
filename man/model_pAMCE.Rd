@@ -60,7 +60,22 @@ model_pAMCE(formula, formula_three = NULL, data, reg = TRUE, ord_fac,
 \code{model_pAMCE} implements the model-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
 }
 \examples{
+  # Small example
+  target_dist_marginal <- OnoBurden$target_dist_marginal
+  OnoBurden_data <- OnoBurden$OnoBurden_data
+  OnoBurden_data_small <- OnoBurden_data[1:300, ]
+  target_dist_marginal_small <- target_dist_marginal[c("gender", "race")]
+  out_model_s <-
+      model_pAMCE(formula = Y ~ gender + race,
+           data = OnoBurden_data_small,
+           pair_id = OnoBurden_data_small$pair_id,
+           cluster_id = OnoBurden_data_small$id,
+           target_dist  = target_dist_marginal_small,
+           target_type = "marginal", numCores = 2)
+  summary(out_model_s, factor_name = c("gender"))
+
 \dontrun{
+  # Example
   data("OnoBurden")
   OnoBurden_data <- OnoBurden$OnoBurden_data
   OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
