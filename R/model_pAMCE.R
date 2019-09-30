@@ -47,9 +47,11 @@
 #'   OnoBurden_data <- OnoBurden$OnoBurden_data
 #'   OnoBurden_data_small <- OnoBurden_data[1:300, ]
 #'   target_dist_marginal_small <- target_dist_marginal[c("gender", "race")]
+#'
+#'   # model-based estimation without regularization
 #'   out_model_s <-
 #'       model_pAMCE(formula = Y ~ gender + race,
-#'            data = OnoBurden_data_small,
+#'            data = OnoBurden_data_small, reg = FALSE,
 #'            pair_id = OnoBurden_data_small$pair_id,
 #'            cluster_id = OnoBurden_data_small$id,
 #'            target_dist  = target_dist_marginal_small,
@@ -63,7 +65,7 @@
 #'   OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
 #'   target_dist_marginal <- OnoBurden$target_dist_marginal
 #'
-#'   # model-based estimation
+#'   # model-based estimation with regularization
 #'   out_model <-
 #'     model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
 #'                  data = OnoBurden_data_cong,
