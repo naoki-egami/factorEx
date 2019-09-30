@@ -55,8 +55,7 @@
 #'            pair_id = OnoBurden_data_small$pair_id,
 #'            cluster_id = OnoBurden_data_small$id,
 #'            target_dist  = target_dist_marginal_small,
-#'            target_type = "marginal", numCores = 2)
-#'   summary(out_model_s, factor_name = c("gender"))
+#'            target_type = "marginal")
 #'
 #' \dontrun{
 #'   # Example
