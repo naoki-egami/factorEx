@@ -1,5 +1,5 @@
-factorEx: Design and Analysis for Factorial Experiments [![CRAN Version](http://www.r-pkg.org/badges/version/factorEx)](https://CRAN.R-project.org/package=factorEx) [![Build Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
-===========================================================================================================================================================================================================================================================================================================================
+factorEx: Design and Analysis for Factorial Experiments [![Build Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
+==============================================================================================================================================================================================================
 
 **Description:**
 
