@@ -1,5 +1,5 @@
-factorEx: Design and Analysis for Factorial Experiments [![Build Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
-==============================================================================================================================================================================================================
+factorEx: Design and Analysis for Factorial Experiments [![CRAN Version](http://www.r-pkg.org/badges/version/factorEx)](https://CRAN.R-project.org/package=factorEx) [![Build Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
+===========================================================================================================================================================================================================================================================================================================================
 
 **Description:**
 
@@ -112,11 +112,6 @@ out_design_mar <-
                pair_id = OnoBurden_data_pr$pair_id,
                cluster_id = OnoBurden_data_pr$id,
                target_dist  = target_dist_marginal, target_type = "marginal")
-```
-
-    ## Estimaing the pAMCEs for gender...age...experience...
-
-``` r
 summary(out_design_mar)
 ```
 
@@ -231,11 +226,6 @@ out_design_par <-
                    cluster_id = OnoBurden_data_pr$id,
                    target_dist  = target_dist_partial, target_type = "partial_joint",
                    partial_joint_name = partial_joint_name)
-```
-
-    ## Estimaing the pAMCEs for gender...age...race...
-
-``` r
 summary(out_design_par)
 ```
 
