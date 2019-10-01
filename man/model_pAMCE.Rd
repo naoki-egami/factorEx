@@ -75,7 +75,7 @@ model_pAMCE(formula, formula_three = NULL, data, reg = TRUE, ord_fac,
            target_dist  = target_dist_marginal_small,
            target_type = "marginal")
 
-\dontrun{
+\donttest{
   # Example
   data("OnoBurden")
   OnoBurden_data <- OnoBurden$OnoBurden_data

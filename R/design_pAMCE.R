@@ -36,7 +36,7 @@
 #'                cluster_id = OnoBurden_data_pr_s$id,
 #'                target_dist  = target_dist_marginal_s, target_type = "marginal")
 #' summary(out_design_mar_s)
-#' \dontrun{
+#' \donttest{
 #'   #  Example
 #'   data("OnoBurden")
 #'   OnoBurden_data_pr <- OnoBurden$OnoBurden_data_pr
