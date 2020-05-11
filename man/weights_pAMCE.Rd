@@ -4,8 +4,17 @@
 \alias{weights_pAMCE}
 \title{Computing weights for estimating the population AMCE using a design-based approach}
 \usage{
-weights_pAMCE(formula, factor_name, data, pair, pair_id, cross_int,
-  target_dist, target_type, partial_joint_name)
+weights_pAMCE(
+  formula,
+  factor_name,
+  data,
+  pair,
+  pair_id,
+  cross_int,
+  target_dist,
+  target_type,
+  partial_joint_name
+)
 }
 \arguments{
 \item{formula}{Formula}

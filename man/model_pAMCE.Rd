@@ -4,11 +4,25 @@
 \alias{model_pAMCE}
 \title{Estimating the population AMCE using a model-based approach}
 \usage{
-model_pAMCE(formula, formula_three = NULL, data, reg = TRUE, ord_fac,
-  pair = FALSE, pair_id = NULL, cross_int = FALSE,
-  cluster_id = NULL, target_dist, target_type, difference = FALSE,
-  cv_type = "cv.1Std", nfolds = 5, boot = 100, seed = 1234,
-  numCores = NULL)
+model_pAMCE(
+  formula,
+  formula_three = NULL,
+  data,
+  reg = TRUE,
+  ord_fac,
+  pair = FALSE,
+  pair_id = NULL,
+  cross_int = FALSE,
+  cluster_id = NULL,
+  target_dist,
+  target_type,
+  difference = FALSE,
+  cv_type = "cv.1Std",
+  nfolds = 5,
+  boot = 100,
+  seed = 1234,
+  numCores = NULL
+)
 }
 \arguments{
 \item{formula}{Formula}

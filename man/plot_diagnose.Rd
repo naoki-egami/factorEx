@@ -4,8 +4,14 @@
 \alias{plot_diagnose}
 \title{Plotting diagnostic checks}
 \usage{
-plot_diagnose(x, factor_name, legend_pos = "topright", target_dist_name,
-  xlim, mar)
+plot_diagnose(
+  x,
+  factor_name,
+  legend_pos = "topright",
+  target_dist_name,
+  xlim,
+  mar
+)
 }
 \arguments{
 \item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE.'}

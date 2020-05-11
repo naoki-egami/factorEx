@@ -4,9 +4,17 @@
 \alias{plot.pAMCE}
 \title{Plotting the estimated population AMCEs}
 \usage{
-\method{plot}{pAMCE}(x, factor_name, target_dist_name,
-  legend_pos = "topright", main = "Estimated population AMCEs", xlim,
-  mar = 12, diagnose = FALSE, ...)
+\method{plot}{pAMCE}(
+  x,
+  factor_name,
+  target_dist_name,
+  legend_pos = "topright",
+  main = "Estimated population AMCEs",
+  xlim,
+  mar = 12,
+  diagnose = FALSE,
+  ...
+)
 }
 \arguments{
 \item{x}{An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'}

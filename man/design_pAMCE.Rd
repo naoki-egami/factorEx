@@ -4,9 +4,18 @@
 \alias{design_pAMCE}
 \title{Estimating the population AMCE using a design-based approach}
 \usage{
-design_pAMCE(formula, factor_name, data, pair = FALSE, pair_id = NULL,
-  cross_int = FALSE, cluster_id = NULL, target_dist, target_type,
-  partial_joint_name)
+design_pAMCE(
+  formula,
+  factor_name,
+  data,
+  pair = FALSE,
+  pair_id = NULL,
+  cross_int = FALSE,
+  cluster_id = NULL,
+  target_dist,
+  target_type,
+  partial_joint_name
+)
 }
 \arguments{
 \item{formula}{Formula}

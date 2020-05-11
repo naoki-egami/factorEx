@@ -4,8 +4,7 @@
 \alias{summary.pAMCE}
 \title{Summarizing the estimated population AMCEs}
 \usage{
-\method{summary}{pAMCE}(object, factor_name, target_dist_name,
-  sample = FALSE, ...)
+\method{summary}{pAMCE}(object, factor_name, target_dist_name, sample = FALSE, ...)
 }
 \arguments{
 \item{object}{An object of class "pAMCE", a result of a call to 'model_pAMCE' or 'design_pAMCE'}

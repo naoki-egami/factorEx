@@ -7,7 +7,7 @@ AME_estimate <- function(formula,
                          marginal_dist,
                          marginal_type,
                          joint_dist = NULL,
-                         boot,
+                         boot, seed = 1234,
                          difference = FALSE, formula_three_c){
 
   ###########
@@ -256,6 +256,7 @@ AME_estimate <- function(formula,
   }
 
   ##  bootstrap coefficients
+  set.seed(seed)
   boot_coef <- rmvnorm(n = boot, mean = coefInt, sigma = vcovInt)
 
 

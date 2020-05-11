@@ -332,7 +332,7 @@ model_pAMCE <- function(formula,
                          marginal_dist = marginal_dist,
                          marginal_type = target_name,
                          joint_dist = joint_dist,
-                         boot = boot,
+                         boot = boot, seed =  seed,
                          difference = difference, formula_three_c = formula_three_c)
   }else if(reg == TRUE){
     if(missing(ord_fac)) ord_fac <- rep(TRUE, (length(all.vars(formula)) - 1))
