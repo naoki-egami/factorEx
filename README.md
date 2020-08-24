@@ -15,7 +15,7 @@ R package `factorEx` provides design-based and model-based estimators for the po
 
 **References:**
 
--   de la Cuesta, Egami, and Imai. (2019+). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://naokiegami.com/paper/conjoint_profile.pdf) (Working Paper)
+-   de la Cuesta, Egami, and Imai. (Forthcoming). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://naokiegami.com/paper/conjoint_profile.pdf) *Political Analysis*
 
 -   Egami and Imai. (2019). [Causal Interaction in Factorial Experiments: Application to Conjoint Analysis.](https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf) *Journal of the American Statistical Association*, Vol.114, No.526 (June), pp. 529–540.
 
