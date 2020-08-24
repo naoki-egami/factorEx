@@ -9,7 +9,7 @@ R package `factorEx` provides design-based and model-based estimators for the po
 
 **Authors:**
 
--   [Naoki Egami](https://scholar.princeton.edu/negami/)
+-   [Naoki Egami](https://naokiegami.com/)
 -   [Brandon de la Cuesta](https://www.brandondelacuesta.com/)
 -   [Kosuke Imai](https://imai.fas.harvard.edu/)
 
