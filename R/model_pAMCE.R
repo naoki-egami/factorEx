@@ -380,6 +380,7 @@ model_pAMCE <- function(formula,
     out$input$reg <- reg
     out$input$target_dist  <- target_dist_orig
     out$input$target_dist_name
+    out$input$target_type <- target_type
 
     marginal_dist_u_list <- list()
     for(z in 1:length(marginal_dist_orig)){
@@ -411,6 +412,7 @@ model_pAMCE <- function(formula,
       }
     }
     names(out$coef)  <- colnames(out$boot_coef)
+    colnames(out$vcov) <- rownames(out$vcov) <- names(out$coef)
   }
   out$approach <- "model_based"
 

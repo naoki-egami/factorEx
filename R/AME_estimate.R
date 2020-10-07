@@ -277,7 +277,7 @@ AME_estimate <- function(formula,
                  "cluster" = cluster_original, "marginal_dist" = marginal_dist,
                  "marginal_type" = marginal_type, "difference" = difference)
 
-  output <- list("AMCE" = AME, "baseline" = baseline, "coef" = coefInt,
+  output <- list("AMCE" = AME, "baseline" = baseline, "coef" = coefInt, "vcov" = vcovInt,
                  "type_all" = type_all, "type_difference" = type_difference,
                  "boot_coef" = boot_coef,
                  "input" = input)
