@@ -1,7 +1,7 @@
 Package: factorEx
 Type: Package
 Title: Design and Analysis for Factorial Experiments
-Version: 1.0.1
+Version: 1.0.2
 Author: Naoki Egami, Brandon de la Cuesta, Kosuke Imai
 Maintainer: Naoki Egami <naoki.egami5@gmail.com>
 Description: Provides design-based and model-based estimators for the population average marginal component effects in general factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+), and Egami and Imai (2019) <doi:10.1080/01621459.2018.1476246>.
