@@ -1,11 +1,18 @@
 factorEx: Design and Analysis for Factorial Experiments
 =======================================================
 
-[![CRAN Version](http://www.r-pkg.org/badges/version/factorEx)](https://CRAN.R-project.org/package=factorEx) [![Build Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
+[![CRAN
+Version](http://www.r-pkg.org/badges/version/factorEx)](https://CRAN.R-project.org/package=factorEx)
+[![Build
+Status](https://travis-ci.com/naoki-egami/factorEx.svg?token=HG8MgPC3Smp4ekySy22s&branch=master)](https://travis-ci.com/naoki-egami/factorEx)
 
 **Description:**
 
-R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (Forthcoming, PA) and Egami and Imai (2019, JASA).
+R package `factorEx` provides design-based and model-based estimators
+for the population average marginal component effects (the pAMCE) in
+factorial experiments, including conjoint analysis. The package also
+implements a series of recommendations offered in de la Cuesta, Egami,
+and Imai (2022, PA) and Egami and Imai (2019, JASA).
 
 **Authors:**
 
@@ -15,9 +22,16 @@ R package `factorEx` provides design-based and model-based estimators for the po
 
 **References:**
 
--   de la Cuesta, Egami, and Imai. (Forthcoming). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://naokiegami.com/paper/conjoint_profile.pdf) *Political Analysis*
+-   de la Cuesta, Egami, and Imai. (2022). [Improving the External
+    Validity of Conjoint Analysis: The Essential Role of Profile
+    Distribution.](https://naokiegami.com/paper/conjoint_profile.pdf)
+    *Political Analysis*, Vol.30, No.1 (January), pp. 19–45.
 
--   Egami and Imai. (2019). [Causal Interaction in Factorial Experiments: Application to Conjoint Analysis.](https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf) *Journal of the American Statistical Association*, Vol.114, No.526 (June), pp. 529–540.
+-   Egami and Imai. (2019). [Causal Interaction in Factorial
+    Experiments: Application to Conjoint
+    Analysis.](https://naokiegami.com/paper/causal_int_JASA.pdf)
+    *Journal of the American Statistical Association*, Vol.114, No.526
+    (June), pp. 529–540.
 
 Installation Instructions
 -------------------------
@@ -28,13 +42,16 @@ Installation Instructions
 install.packages("factorEx")
 ```
 
-You can also install the most recent development version using the `devtools` package. First you have to install `devtools` using the following code. Note that you only have to do this once:
+You can also install the most recent development version using the
+`devtools` package. First you have to install `devtools` using the
+following code. Note that you only have to do this once:
 
 ``` r
 if(!require(devtools)) install.packages("devtools")
 ```
 
-Then, load `devtools` and use the function `install_github()` to install `factorEx`:
+Then, load `devtools` and use the function `install_github()` to install
+`factorEx`:
 
 ``` r
 library(devtools)
@@ -45,18 +62,23 @@ Examples
 --------
 
 -   **Design-based Confirmatory Analysis**
-    -   Case 1: Use Marginal Distributions for Target Profile Distribution
-    -   Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution
+    -   Case 1: Use Marginal Distributions for Target Profile
+        Distribution
+    -   Case 2: Use Combination of Marginal and Partial Joint
+        Distributions for Target Profile Distribution
 -   **Model-based Exploratory Analysis**
 
 (1) Design-based Confirmatory Analysis
 --------------------------------------
 
-Here, we use the conjoint experiment that randomized profiles according to the marginal population randomization design.
+Here, we use the conjoint experiment that randomized profiles according
+to the marginal population randomization design.
 
 ### Case 1: Use Marginal Distributions for Target Profile Distributions
 
-When using marginal distributions, `target_dist` should be a list and each element should have a factor name. Within each list, a `numeric` vector should have the same level names as those in `data`.
+When using marginal distributions, `target_dist` should be a list and
+each element should have a factor name. Within each list, a `numeric`
+vector should have the same level names as those in `data`.
 
 ``` r
 ## Load the package and data
@@ -77,10 +99,8 @@ target_dist_marginal
     ## 0.6778243 0.3221757 
     ## 
     ## $age
-    ## 36 years old 44 years old 52 years old 60 years old 68 years old 
-    ##   0.05020921   0.13807531   0.23012552   0.22594142   0.25104603 
-    ## 76 years old 
-    ##   0.10460251 
+    ## 36 years old 44 years old 52 years old 60 years old 68 years old 76 years old 
+    ##   0.05020921   0.13807531   0.23012552   0.22594142   0.25104603   0.10460251 
     ## 
     ## $family
     ## Single (never married)      Single (divorced)     Married (no child) 
@@ -104,7 +124,9 @@ target_dist_marginal
     ##     Cut military budget Maintain strong defense 
     ##              0.98557692              0.01442308
 
-We can estimate the pAMCE with `design_pAMCE` with `target_type = "marginal"`. Use `factor_name` to specify for which factors we estimate the pAMCE.
+We can estimate the pAMCE with `design_pAMCE` with
+`target_type = "marginal"`. Use `factor_name` to specify for which
+factors we estimate the pAMCE.
 
 ``` r
 out_design_mar <- 
@@ -142,9 +164,20 @@ plot(out_design_mar, factor_name = c("gender", "experience"))
 
 ### Case 2: Use Combination of Marginal and Partial Joint Distributions for Target Profile Distribution
 
-The use of partial joint distributions is useful because it can relax the assumption of no three-way or higher-order interactions (see de la Cuesta, Egami, and Imai (2019+)).
+The use of partial joint distributions is useful because it can relax
+the assumption of no three-way or higher-order interactions (see de la
+Cuesta, Egami, and Imai (2019+)).
 
-When using a combination of marginal and partial joint distributions, `target_dist` should be a list and each element should be a `numeric` vector (if marginal) or an `array`/`table` (if partial joint). Then, use argument `partial_joint_name` to specify which factors are marginal and partial joints. In the following example, `c("gender", "age", "family")` has the partial joint distributions over the three factors. `race` and `party` are based on the marginal distributions, respectively. `c("experience", "pos_security")` has the partial joint distributions over the two factors. Within each list, a `numeric` vector or an `array`/`table` should have the same level names as those in `data`.
+When using a combination of marginal and partial joint distributions,
+`target_dist` should be a list and each element should be a `numeric`
+vector (if marginal) or an `array`/`table` (if partial joint). Then, use
+argument `partial_joint_name` to specify which factors are marginal and
+partial joints. In the following example, `c("gender", "age", "family")`
+has the partial joint distributions over the three factors. `race` and
+`party` are based on the marginal distributions, respectively.
+`c("experience", "pos_security")` has the partial joint distributions
+over the two factors. Within each list, a `numeric` vector or an
+`array`/`table` should have the same level names as those in `data`.
 
 ``` r
 target_dist_partial <- OnoBurden$target_dist_partial
@@ -217,7 +250,10 @@ target_dist_partial
 partial_joint_name  <- list(c("gender", "age", "family"), "race", "party", c("experience", "pos_security"))
 ```
 
-We can estimate the pAMCE with `design_pAMCE` with `target_type = "partial_joint"` and appropriate `partial_joint_name`. The function can use `factor_name` to specify for which factors we estimate the pAMCE.
+We can estimate the pAMCE with `design_pAMCE` with
+`target_type = "partial_joint"` and appropriate `partial_joint_name`.
+The function can use `factor_name` to specify for which factors we
+estimate the pAMCE.
 
 ``` r
 out_design_par <- 
@@ -250,7 +286,9 @@ summary(out_design_par)
 (2) Model-based Exploratory Analysis
 ------------------------------------
 
-Here, we use the conjoint experiment that randomized profiles according to the uniform distribution and incorporate the target profile distribution in the analysis stage.
+Here, we use the conjoint experiment that randomized profiles according
+to the uniform distribution and incorporate the target profile
+distribution in the analysis stage.
 
 ``` r
 OnoBurden_data <- OnoBurden$OnoBurden_data # randomization based on uniform 
@@ -265,13 +303,6 @@ out_model <-
                    pair_id = OnoBurden_data_cong$pair_id,
                    cluster_id = OnoBurden_data_cong$id,
                    target_dist  = target_dist_marginal, target_type = "marginal")
-```
-
-    ## Note: suggest 'boot' greater than 500 for final results
-    ## Cross-Validation: 20%..40%..60%..80%..100%..
-    ## Bootstrap (100):
-
-``` r
 summary(out_model, factor_name = c("gender"))
 ```
 
@@ -284,7 +315,9 @@ summary(out_model, factor_name = c("gender"))
     ## ---
     ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-When `sample = TRUE`, the function also reports the AMCE based on the in-sample profile distributions (`sample AMCE`), which is the uniform AMCE in this example.
+When `sample = TRUE`, the function also reports the AMCE based on the
+in-sample profile distributions (`sample AMCE`), which is the uniform
+AMCE in this example.
 
 ``` r
 summary(out_model, factor_name = c("gender"), sample = TRUE)
@@ -300,13 +333,18 @@ summary(out_model, factor_name = c("gender"), sample = TRUE)
     ## ---
     ## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Use `plot` to visualize the estimated pAMCEs. When `diagnose = TRUE`, it provides two diagnostic checks; specification tests and the check of bootstrap distributions.
+Use `plot` to visualize the estimated pAMCEs. When `diagnose = TRUE`, it
+provides two diagnostic checks; specification tests and the check of
+bootstrap distributions.
 
 ``` r
 plot(out_model, factor_name = c("gender"), diagnose = TRUE)
 ```
 
-In the model-based analysis, we can also decompose the difference between the pAMCE and the uniform AMCE. Use `effect_name` to specify which pAMCE we want to decompose. `effect_name` has two elements; the first is a factor name and the second is a level name of interest.
+In the model-based analysis, we can also decompose the difference
+between the pAMCE and the uniform AMCE. Use `effect_name` to specify
+which pAMCE we want to decompose. `effect_name` has two elements; the
+first is a factor name and the second is a level name of interest.
 
 ``` r
 decompose_pAMCE(out_model, effect_name = c("gender", "Female"))

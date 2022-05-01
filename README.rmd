@@ -11,19 +11,19 @@ output:
 
 **Description:** 
 
-R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2019+) and Egami and Imai (2019, JASA).
+R package `factorEx` provides design-based and model-based estimators for the population average marginal component effects (the pAMCE) in factorial experiments, including conjoint analysis. The package also implements a series of recommendations offered in de la Cuesta, Egami, and Imai (2022, PA) and Egami and Imai (2019, JASA).
 
 **Authors:** 
 
-- [Naoki Egami](https://scholar.princeton.edu/negami/)
+- [Naoki Egami](https://naokiegami.com/)
 - [Brandon de la Cuesta](https://www.brandondelacuesta.com/)
 - [Kosuke Imai](https://imai.fas.harvard.edu/)
 
 **References:** 
 
- - de la Cuesta, Egami, and Imai. (2019+). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf)  (Working Paper)
+ - de la Cuesta, Egami, and Imai. (2022). [Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution.](https://naokiegami.com/paper/conjoint_profile.pdf) *Political Analysis*, Vol.30, No.1 (January), pp. 19–45.
  
-  - Egami and Imai. (2019). [Causal Interaction in Factorial Experiments: Application to Conjoint Analysis.](https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf) *Journal of the American Statistical Association*, Vol.114, No.526 (June), pp. 529–540.
+  - Egami and Imai. (2019). [Causal Interaction in Factorial Experiments: Application to Conjoint Analysis.](https://naokiegami.com/paper/causal_int_JASA.pdf) *Journal of the American Statistical Association*, Vol.114, No.526 (June), pp. 529–540.
 
 ## Installation Instructions
 `factorEx` is available on CRAN and can be installed using:
