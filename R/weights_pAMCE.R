@@ -33,7 +33,7 @@ weights_pAMCE <- function(formula, factor_name, data, pair, pair_id, cross_int,
   # Case 1: both are marginal
   if(target_type  == "marginal"){
 
-    if(class(target_dist) != "list"){
+    if(!inherits(target_dist, "list")){
       stop(" if 'target_type = marginal', class(target_dist) should be 'list' ")
     }
 
@@ -47,7 +47,7 @@ weights_pAMCE <- function(formula, factor_name, data, pair, pair_id, cross_int,
   # Case 2: both are data
   if(target_type  == "target_data"){
 
-    if(class(target_dist) != "data.frame"){
+    if(!inherits(target_dist, "data.frame")){
       stop(" if 'target_type = target_data', class(target_dist) should be 'data.frame' ")
     }
 
@@ -70,7 +70,7 @@ weights_pAMCE <- function(formula, factor_name, data, pair, pair_id, cross_int,
       stop(" if 'target_type = partial_joint', please specify 'partial_joint_name' ")
     }
 
-    if(class(target_dist) != "list"){
+    if(!inherits(target_dist, "list")){
       stop(" if 'target_type = partial_joint', class(target_dist) should be 'list' ")
     }
 

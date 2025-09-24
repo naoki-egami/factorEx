@@ -102,7 +102,9 @@ model_pAMCE(
                  data = OnoBurden_data_cong,
                  pair_id = OnoBurden_data_cong$pair_id,
                  cluster_id = OnoBurden_data_cong$id,
-                 target_dist  = target_dist_marginal, target_type = "marginal")
+                 target_dist  = target_dist_marginal,
+                 target_type = "marginal",
+                 numCores = 1)
  summary(out_model, factor_name = c("gender"))
 
  # decompose the difference in the pAMCEs
