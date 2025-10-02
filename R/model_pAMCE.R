@@ -57,7 +57,7 @@
 #'            target_dist  = target_dist_marginal_small,
 #'            target_type = "marginal")
 #'
-#' \donttest{
+#' \dontrun{
 #'   # Example
 #'   data("OnoBurden")
 #'   OnoBurden_data <- OnoBurden$OnoBurden_data
