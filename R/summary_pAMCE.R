@@ -4,6 +4,7 @@
 #' @param target_dist_name Names of the target profile distributions to be used
 #' @param sample Whether to print the sample AMCEs, which is estimated based on the profile distribution used for randomization
 #' @param ... Other parameters
+#' @return No return value, called for side effects
 #' @export
 
 summary.pAMCE <- function(object, factor_name, target_dist_name, sample = FALSE, ...){

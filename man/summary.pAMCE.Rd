@@ -17,6 +17,9 @@
 
 \item{...}{Other parameters}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Summarizing the estimated population AMCEs
 }

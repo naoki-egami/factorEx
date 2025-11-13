@@ -8,6 +8,7 @@
 #' @param mar Space on the left side of the plot. Default is 12
 #' @param diagnose Whether we plot diagnostic checks recommended in de la Cuesta, Egami, and Imai (2019). Default is FALSE
 #' @param ... Other graphical parameters
+#' @return No return value, called for side effects
 #' @export
 
 plot.pAMCE <- function(x, factor_name, target_dist_name,

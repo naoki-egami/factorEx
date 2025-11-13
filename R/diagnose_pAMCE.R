@@ -1,6 +1,7 @@
 #' Diagnose modeling assumptions for the model-based approach
 #' @param x An object of class "pAMCE", a result of a call to 'model_pAMCE'.
 #' @param factor_name A factor for which the function diagnoses modeling assumptions.
+#' @return No return value, called for side effects
 #' @export
 
 diagnose_pAMCE <- function(x, factor_name){
@@ -45,6 +46,7 @@ diagnose_pAMCE <- function(x, factor_name){
 #' @param target_dist_name Names of the target profile distributions to be used.
 #' @param xlim Range for the x-axis.
 #' @param mar Space on the left side of the plot. Default is 12.
+#' @return No return value, called for side effects
 #' @export
 
 plot_diagnose <- function(x, factor_name, legend_pos = "topright", target_dist_name, xlim, mar){

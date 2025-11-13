@@ -11,6 +11,9 @@ diagnose_pAMCE(x, factor_name)
 
 \item{factor_name}{A factor for which the function diagnoses modeling assumptions.}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Diagnose modeling assumptions for the model-based approach
 }

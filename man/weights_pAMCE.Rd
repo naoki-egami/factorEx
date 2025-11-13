@@ -35,6 +35,9 @@ weights_pAMCE(
 
 \item{partial_joint_name}{Names of factors representing partial joint distributions. See Examples for details.}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Computing weights for estimating the population AMCE using a design-based approach
 }

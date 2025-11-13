@@ -26,6 +26,9 @@ plot_diagnose(
 
 \item{mar}{Space on the left side of the plot. Default is 12.}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 Plotting diagnostic checks
 }

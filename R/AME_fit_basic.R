@@ -357,7 +357,7 @@ Fthree <- function(formula,
 cluster_se_glm <- function(model, cluster){
 
   #  Drop unused cluster indicators, if cluster var is a factor
-  if (class(cluster) == "factor") {
+  if (inherits(cluster, "factor")) {
     cluster <- droplevels(cluster)
   }
 

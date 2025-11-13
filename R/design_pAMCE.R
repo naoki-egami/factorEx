@@ -53,9 +53,9 @@
 #'                  target_dist  = target_dist_marginal, target_type = "marginal")
 #'  summary(out_design_mar)
 #' }
-#' @description \code{design_pAMCE} implements the design-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
-#' @references de la Cuesta, Egami, and Imai. (2019+). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. (Working Paper). Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf}.
-#' @references Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540. Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf}.
+#' @description \code{design_pAMCE} implements the design-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2022) for details. More examples are available at the GitHub page of \code{factorEx}.
+#' @references de la Cuesta, Egami, and Imai. (2022). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. Political Analysis.
+#' @references Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540.
 #' @export
 
 design_pAMCE <- function(formula, factor_name,

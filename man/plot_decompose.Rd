@@ -15,6 +15,9 @@ plot_decompose(x, effect_name, target_diff, mar = 12)
 
 \item{mar}{Space on the left side of the plot. Default is 12.}
 }
+\value{
+No return value, called for side effects
+}
 \description{
 See examples in `model_pAMCE`.
 }

@@ -71,7 +71,7 @@ model_pAMCE(
  }
 }
 \description{
-\code{model_pAMCE} implements the model-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2019+) for details. More examples are available at the GitHub page of \code{factorEx}.
+\code{model_pAMCE} implements the model-based approach to estimate the pAMCE. See de la Cuesta, Egami, and Imai (2022) for details. More examples are available at the GitHub page of \code{factorEx}.
 }
 \examples{
   # Small example
@@ -90,19 +90,17 @@ model_pAMCE(
            target_type = "marginal")
 
 \donttest{
-  # Example
-  data("OnoBurden")
-  OnoBurden_data <- OnoBurden$OnoBurden_data
-  OnoBurden_data_cong <- OnoBurden_data[OnoBurden_data$office == "Congress", ]
-  target_dist_marginal <- OnoBurden$target_dist_marginal
-
   # model-based estimation with regularization
   out_model <-
     model_pAMCE(formula = Y ~ gender + age + family + race + experience + party + pos_security,
-                 data = OnoBurden_data_cong,
-                 pair_id = OnoBurden_data_cong$pair_id,
-                 cluster_id = OnoBurden_data_cong$id,
-                 target_dist  = target_dist_marginal, target_type = "marginal")
+                 data = OnoBurden_data_small, reg = TRUE,
+                 pair_id = OnoBurden_data_small$pair_id,
+                 cluster_id = OnoBurden_data_small$id,
+                 target_dist  = target_dist_marginal,
+                 target_type = "marginal",
+                 nfolds = 2,   # suggest "nfolds = 5" in practice
+                 numCores = 1, # when numCores = NULL, it automatically uses all cores.
+                 boot = 5)  # suggest "boot = 500" in practice
  summary(out_model, factor_name = c("gender"))
 
  # decompose the difference in the pAMCEs
@@ -110,7 +108,7 @@ model_pAMCE(
 }
 }
 \references{
-de la Cuesta, Egami, and Imai. (2019+). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. (Working Paper). Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/conjoint_profile.pdf}.
+de la Cuesta, Egami, and Imai. (2022). Improving the External Validity of Conjoint Analysis: The Essential Role of Profile Distribution. Political Analysis.
 
-Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540. Available at \url{https://scholar.princeton.edu/sites/default/files/negami/files/causalint.pdf}.
+Egami and Imai. (2019). Causal Interaction in Factorial Experiments: Application to Conjoint Analysis. Journal of the American Statistical Association, Vol.114, No.526 (June), pp. 529–540.
 }
